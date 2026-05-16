@@ -10,7 +10,7 @@
 
 ```
 nerd-analytics-platform/
-├── backend/      # Константин
+├── backend/      # я
 ├── frontend/     # фронт
 ├── ml/           # ML
 ├── docker-compose.yml
