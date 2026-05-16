@@ -1,6 +1,6 @@
-from sqlalchemy import Column, String, Integer, DateTime
+from sqlalchemy import Column, DateTime, Integer, String
 
-from backend.app.db.database import Base
+from backend.app.models.base import Base
 
 
 class Client(Base):
