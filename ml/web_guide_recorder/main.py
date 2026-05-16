@@ -7,6 +7,7 @@ import logging
 import config
 from agent.recorder import Guide, GuideRecorder
 from guide.exporter import export_html, export_markdown
+from guide.video_exporter import export_video
 
 
 def setup_logging() -> None:
@@ -18,6 +19,7 @@ def setup_logging() -> None:
 
 async def export_outputs(guide: Guide, fmt: str) -> None:
     config.GUIDES_PATH.mkdir(parents=True, exist_ok=True)
+    config.VIDEOS_PATH.mkdir(parents=True, exist_ok=True)
 
     if fmt in ("md", "both"):
         path = await export_markdown(guide, str(config.GUIDES_PATH))
@@ -26,6 +28,13 @@ async def export_outputs(guide: Guide, fmt: str) -> None:
     if fmt in ("html", "both"):
         path = await export_html(guide, str(config.GUIDES_PATH))
         print(f"✅ HTML гайд: {path}")
+
+    if guide.steps:
+        try:
+            video_path = await export_video(guide, str(config.VIDEOS_PATH))
+            print(f"✅ Видео-инструкция: {video_path}")
+        except Exception as exc:  # noqa: BLE001
+            print(f"⚠️ Видео не создано: {exc}")
 
 
 async def run() -> None:

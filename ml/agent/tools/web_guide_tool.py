@@ -27,6 +27,7 @@ GUIDE_PREVIEW_CHARS = 2000
 
 
 _MD_PATH_PATTERN = re.compile(r"Markdown гайд:\s*(\S+)")
+_VIDEO_PATH_PATTERN = re.compile(r"Видео-инструкция:\s*(\S+)")
 
 
 async def record_web_guide(
@@ -102,6 +103,8 @@ async def record_web_guide(
 
     md_match = _MD_PATH_PATTERN.search(stdout)
     md_path = md_match.group(1) if md_match else ""
+    video_match = _VIDEO_PATH_PATTERN.search(stdout)
+    video_path = video_match.group(1) if video_match else ""
     preview = ""
     if md_path and Path(md_path).exists():
         try:
@@ -109,9 +112,15 @@ async def record_web_guide(
         except Exception as exc:  # noqa: BLE001
             preview = f"(failed to read guide: {exc})"
 
-    logger.info("record_web_guide | done | md=%s preview_chars=%d", md_path, len(preview))
+    logger.info(
+        "record_web_guide | done | md=%s video=%s preview_chars=%d",
+        md_path,
+        video_path,
+        len(preview),
+    )
     return {
         "guide_path": md_path,
+        "video_path": video_path,
         "guide_preview": preview,
         "stdout_tail": stdout[-800:],
     }

@@ -19,3 +19,7 @@ env/
 
 #IDE
 .idea/
+
+#media
+*.mp4
+*.wav

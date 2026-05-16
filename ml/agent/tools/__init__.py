@@ -46,8 +46,9 @@ async def record_web_guide(
     Use this when the user wants to interact with a website: open a page, search
     something on Google/Yandex, fill a form, click buttons, extract info from a UI.
     The tool launches a browser (browser-use under the hood), navigates step by step
-    toward the goal, captures screenshots and returns the path to the generated
-    markdown guide plus its first ~2000 characters as a preview.
+    toward the goal, captures screenshots, creates a voice-guided MP4 walkthrough
+    in a separate videos folder and returns paths to generated artifacts plus
+    the first ~2000 characters of the markdown guide as a preview.
 
     Args:
         start_url: starting URL, e.g. "https://google.com".

@@ -28,7 +28,12 @@ Rules:
 - Be specific: name buttons, links, fields as they appear on screen
 - One sentence or two maximum
 - Do not describe what YOU see, write instructions FOR the user
-- Format: "Click [element] to [result]" or "Enter [value] in [field]"
+- Include block index when available from action context.
+- Strict format:
+  "[Блок N] Click [element] to [result]"
+  or
+  "[Блок N] Enter [value] in [field]"
+  If index is unknown, use [Блок ?].
 """
 
 

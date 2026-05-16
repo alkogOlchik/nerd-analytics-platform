@@ -20,6 +20,7 @@ from pydantic import BaseModel
 import config
 from agent.recorder import GuideRecorder
 from guide.exporter import export_html, export_markdown
+from guide.video_exporter import export_video
 
 logger = logging.getLogger(__name__)
 
@@ -49,10 +50,18 @@ async def _run_job(job_id: str, req: RecordRequest) -> None:
         guide = await recorder.record(start_url=req.url, goal=req.goal)
 
         outputs: Dict[str, str] = {}
+        config.GUIDES_PATH.mkdir(parents=True, exist_ok=True)
+        config.VIDEOS_PATH.mkdir(parents=True, exist_ok=True)
+
         if req.fmt in ("md", "both"):
             outputs["markdown"] = await export_markdown(guide, str(config.GUIDES_PATH))
         if req.fmt in ("html", "both"):
             outputs["html"] = await export_html(guide, str(config.GUIDES_PATH))
+        if guide.steps:
+            try:
+                outputs["video"] = await export_video(guide, str(config.VIDEOS_PATH))
+            except Exception as exc:  # noqa: BLE001
+                outputs["video_error"] = f"{type(exc).__name__}: {exc}"
 
         await _set_job(
             job_id,

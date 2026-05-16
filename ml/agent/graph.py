@@ -31,9 +31,10 @@ Available tools:
   for numerical analysis. Returns stdout of the code.
 - record_web_guide(start_url, goal, headless=False, max_steps=30): drive a real
   browser to a goal on a website (open page, search, click, fill forms) and
-  produce a step-by-step markdown guide with screenshots. Use this whenever
+  produce a step-by-step markdown guide with screenshots and a voice-guided
+  walkthrough video. Use this whenever
   the user asks to "open a site", "search on Google/Yandex", "go to a URL",
-  or otherwise interact with the web. Returns the guide path and a preview.
+  or otherwise interact with the web. Returns guide path, video path and preview.
 
 Decide at each step whether to call a tool or to answer directly.
 When you have enough information, produce the final answer with no tool calls.

@@ -28,7 +28,18 @@ AGENT_BEHAVIOR_HINT = (
     "2) If target text is known (e.g. 'Спорт'), prioritize exact text match clicks in header/menu.\n"
     "3) Use scroll only as fallback when no relevant clickable element is visible.\n"
     "4) Do not repeat the same scroll direction more than once without trying a click/type/open-menu action.\n"
-    "5) Briefly explain why the chosen action moves toward the goal."
+    "5) Briefly explain why the chosen action moves toward the goal.\n"
+    "\n"
+    "HARD STOP RULES (must always be followed):\n"
+    "A) Maximum 2 attempts for any approach. If the same action/strategy fails twice in a row\n"
+    "   (element not clickable, no progress, same screen), DO NOT retry — switch strategy OR\n"
+    "   call `done` with success=false and a short reason.\n"
+    "B) If the current URL or visible page already matches the goal (e.g. the requested\n"
+    "   section/article/result is on screen), immediately call `done` with success=true.\n"
+    "   Do NOT keep scrolling or clicking after the goal is reached.\n"
+    "C) If you cannot find a relevant interactive element after one inspection and one\n"
+    "   fallback scroll, call `done` with success=false. Better to stop than loop.\n"
+    "D) Never emit an empty action. If unsure what to do — call `done`."
 )
 
 
@@ -61,5 +72,7 @@ def build_agent(
         register_new_step_callback=on_new_step,
         extend_system_message=AGENT_BEHAVIOR_HINT,
         max_actions_per_step=config.BROWSER_MAX_ACTIONS_PER_STEP,
+        max_failures=config.BROWSER_MAX_FAILURES,
+        retry_delay=config.BROWSER_RETRY_DELAY_SECONDS,
         enable_memory=False,
     )
