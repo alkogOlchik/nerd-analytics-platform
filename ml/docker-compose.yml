@@ -1,0 +1,36 @@
+version: "3.9"
+
+services:
+  chroma:
+    image: chromadb/chroma:0.5.5
+    container_name: project_llm_chroma
+    restart: unless-stopped
+    profiles: ["chroma-server"]
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data/chroma_server:/chroma/chroma
+    environment:
+      - IS_PERSISTENT=TRUE
+      - ANONYMIZED_TELEMETRY=FALSE
+
+  agent:
+    image: python:3.11-slim
+    container_name: project_llm_agent
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - ./:/app
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CHROMA_PERSIST_DIRECTORY=/app/data/chroma_local
+      - CHROMA_COLLECTION_NAME=${CHROMA_COLLECTION_NAME:-documents}
+      - LLM_BASE_URL=${LLM_BASE_URL:-http://host.docker.internal:11434/v1}
+      - LLM_MODEL=${LLM_MODEL:-gemma4:e4b}
+      - LLM_API_KEY=${LLM_API_KEY:-ollama}
+      - CODE_EXECUTION_TIMEOUT_SECONDS=${CODE_EXECUTION_TIMEOUT_SECONDS:-10}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: ["bash", "-lc", "sleep infinity"]
