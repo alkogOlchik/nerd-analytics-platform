@@ -11,7 +11,10 @@ from typing import Any
 
 import httpx
 
-import config
+try:
+    from web_guide_recorder import config
+except ModuleNotFoundError:
+    import config
 
 logger = logging.getLogger(__name__)
 

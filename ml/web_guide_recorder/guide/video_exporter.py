@@ -10,7 +10,10 @@ from typing import Optional
 
 from PIL import Image, ImageDraw
 
-from agent.recorder import Guide, Step
+try:
+    from web_guide_recorder.agent.recorder import Guide, Step
+except ModuleNotFoundError:
+    from agent.recorder import Guide, Step
 
 
 def _stamp() -> str:

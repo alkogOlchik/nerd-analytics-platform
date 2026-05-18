@@ -29,7 +29,7 @@ Available tools:
 - rag_search(query, top_k): search the local knowledge base for relevant text.
 - run_analytics(task_description): generate and execute Python (numpy) code
   for numerical analysis. Returns stdout of the code.
-- record_web_guide(start_url, goal, headless=False, max_steps=30): drive a real
+- record_web_guide(start_url, goal, headless=False, max_steps=30, model=None): drive a real
   browser to a goal on a website (open page, search, click, fill forms) and
   produce a step-by-step markdown guide with screenshots and a voice-guided
   walkthrough video. Use this whenever
@@ -70,11 +70,17 @@ async def reason_node(state: AgentState) -> Dict[str, Any]:
     """LLM step: decide tool call or final answer."""
     messages = _ensure_system_prompt(list(state.get("messages") or []))
     iterations = (state.get("iterations") or 0) + 1
+    model_override = state.get("llm_model_override")
 
-    logger.info("[iter=%d] reason | start | history_len=%d", iterations, len(messages))
+    logger.info(
+        "[iter=%d] reason | start | history_len=%d model=%s",
+        iterations,
+        len(messages),
+        model_override or "default",
+    )
 
     try:
-        llm = get_llm().bind_tools(TOOLS)
+        llm = get_llm(model=model_override).bind_tools(TOOLS)
         response = await llm.ainvoke(messages)
     except Exception as exc:  # noqa: BLE001 — any LLM error becomes an observation
         logger.exception("[iter=%d] reason | llm error: %s", iterations, exc)
@@ -113,8 +119,23 @@ _tool_node = ToolNode(TOOLS)
 async def act_node(state: AgentState) -> Dict[str, Any]:
     """Execute pending tool calls. Errors are captured, not raised."""
     iterations = state.get("iterations") or 0
+    model_override = state.get("llm_model_override")
     last_msg = (state.get("messages") or [None])[-1]
     pending = getattr(last_msg, "tool_calls", None) or []
+    if model_override:
+        for tc in pending:
+            if tc.get("name") != "record_web_guide":
+                continue
+            args = tc.get("args")
+            if not isinstance(args, dict):
+                continue
+            if "model" not in args:
+                args["model"] = model_override
+                logger.info(
+                    "[iter=%d] act | injected model=%s into record_web_guide",
+                    iterations,
+                    model_override,
+                )
     for tc in pending:
         logger.info(
             "[iter=%d] act | calling %s args=%s",

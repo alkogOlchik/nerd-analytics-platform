@@ -17,10 +17,17 @@ from typing import Any, Dict
 from fastapi import BackgroundTasks, FastAPI, HTTPException
 from pydantic import BaseModel
 
-import config
-from agent.recorder import GuideRecorder
-from guide.exporter import export_html, export_markdown
-from guide.video_exporter import export_video
+try:
+    from web_guide_recorder import config
+    from web_guide_recorder.agent.recorder import GuideRecorder
+    from web_guide_recorder.guide.exporter import export_html, export_markdown
+    from web_guide_recorder.guide.video_exporter import export_video
+except ModuleNotFoundError:
+    # Backward-compatible imports when running from web_guide_recorder/ cwd.
+    import config
+    from agent.recorder import GuideRecorder
+    from guide.exporter import export_html, export_markdown
+    from guide.video_exporter import export_video
 
 logger = logging.getLogger(__name__)
 

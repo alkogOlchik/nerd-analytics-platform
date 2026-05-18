@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import re
 import sys
 from pathlib import Path
@@ -36,6 +37,7 @@ async def record_web_guide(
     headless: bool = False,
     max_steps: int = 30,
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
+    model: str | None = None,
 ) -> Dict[str, Any]:
     """Запускает web_guide_recorder и ждёт результата."""
     if not RECORDER_MAIN.exists():
@@ -50,11 +52,22 @@ async def record_web_guide(
         "--max-steps", str(max_steps),
         "--headless" if headless else "--no-headless",
     ]
-    logger.info("record_web_guide | start | url=%s goal=%r max_steps=%d", start_url, goal, max_steps)
+    logger.info(
+        "record_web_guide | start | url=%s goal=%r max_steps=%d model=%s",
+        start_url,
+        goal,
+        max_steps,
+        model or "default",
+    )
+
+    env = os.environ.copy()
+    if model:
+        env["OLLAMA_MODEL"] = model
 
     proc = await asyncio.create_subprocess_exec(
         *cmd,
         cwd=str(RECORDER_DIR),
+        env=env,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.STDOUT,
     )

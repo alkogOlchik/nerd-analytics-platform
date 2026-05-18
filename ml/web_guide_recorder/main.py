@@ -4,10 +4,18 @@ import argparse
 import asyncio
 import logging
 
-import config
-from agent.recorder import Guide, GuideRecorder
-from guide.exporter import export_html, export_markdown
-from guide.video_exporter import export_video
+try:
+    from web_guide_recorder import config
+    from web_guide_recorder.agent.recorder import Guide, GuideRecorder
+    from web_guide_recorder.guide.exporter import export_html, export_markdown
+    from web_guide_recorder.guide.video_exporter import export_video
+except ModuleNotFoundError:
+    # Backward-compatible imports when running as:
+    #   cd web_guide_recorder && python main.py ...
+    import config
+    from agent.recorder import Guide, GuideRecorder
+    from guide.exporter import export_html, export_markdown
+    from guide.video_exporter import export_video
 
 
 def setup_logging() -> None:

@@ -28,4 +28,5 @@ class AgentState(TypedDict, total=False):
     messages: Annotated[List[BaseMessage], add]
     observations: Annotated[List[Observation], add]
     iterations: int
+    llm_model_override: Optional[str]
     final_answer: Optional[str]

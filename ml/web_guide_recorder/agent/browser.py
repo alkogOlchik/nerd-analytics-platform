@@ -17,7 +17,10 @@ except ModuleNotFoundError:
     from browser_use.browser import Browser, BrowserConfig
 from langchain_openai import ChatOpenAI
 
-import config
+try:
+    from web_guide_recorder import config
+except ModuleNotFoundError:
+    import config
 
 # (browser_state, agent_output, step_number) -> awaitable
 NewStepCallback = Callable[[object, object, int], Awaitable[None]]

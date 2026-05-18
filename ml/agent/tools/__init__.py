@@ -39,6 +39,7 @@ async def record_web_guide(
     goal: str,
     headless: bool = False,
     max_steps: int = 30,
+    model: str | None = None,
 ) -> Dict[str, Any]:
     """Drive a real browser to achieve a goal on a website and produce a step-by-step
     markdown guide with screenshots.
@@ -57,12 +58,14 @@ async def record_web_guide(
               and report the first 3 results".
         headless: run the browser without a visible window (default False).
         max_steps: hard cap on browser actions (default 30).
+        model: optional model override for recorder's Ollama model.
     """
     return await _record_web_guide_impl(
         start_url=start_url,
         goal=goal,
         headless=headless,
         max_steps=max_steps,
+        model=model,
     )
 
 

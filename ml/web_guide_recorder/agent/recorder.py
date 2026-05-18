@@ -22,9 +22,14 @@ import re
 import imagehash
 from PIL import Image
 
-import config
-from agent.browser import build_agent, build_browser
-from agent.vision import describe_step, ollama_health_check
+try:
+    from web_guide_recorder import config
+    from web_guide_recorder.agent.browser import build_agent, build_browser
+    from web_guide_recorder.agent.vision import describe_step, ollama_health_check
+except ModuleNotFoundError:
+    import config
+    from agent.browser import build_agent, build_browser
+    from agent.vision import describe_step, ollama_health_check
 
 logger = logging.getLogger(__name__)
 

@@ -9,8 +9,12 @@ from pathlib import Path
 import aiofiles
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-import config
-from agent.recorder import Guide
+try:
+    from web_guide_recorder import config
+    from web_guide_recorder.agent.recorder import Guide
+except ModuleNotFoundError:
+    import config
+    from agent.recorder import Guide
 
 
 def _stamp() -> str:

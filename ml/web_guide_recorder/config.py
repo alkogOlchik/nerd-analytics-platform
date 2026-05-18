@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 
 OLLAMA_BASE_URL = "http://localhost:11434"
-OLLAMA_MODEL = "gemma4:e4b"
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gemma4:e4b")
 OLLAMA_CTX_SIZE = 20000
 BROWSER_HEADLESS = False
 BROWSER_MAX_ACTIONS_PER_STEP = int(os.getenv("BROWSER_MAX_ACTIONS_PER_STEP", "3"))
