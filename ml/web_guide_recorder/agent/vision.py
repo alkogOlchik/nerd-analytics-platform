@@ -18,25 +18,25 @@ except ModuleNotFoundError:
 
 logger = logging.getLogger(__name__)
 
-PROMPT_TEMPLATE = """You are a technical writer creating a step-by-step user guide.
+PROMPT_TEMPLATE = """Ты пишешь подпись к одному шагу видео-инструкции на русском языке.
 
-Goal the user is trying to achieve: {goal}
-Action just performed: {action_taken}
+Цель: {goal}
+Действие: {action_taken}
+Тип действия: {action_type}
+Введённый текст: {action_value}
 
-Look at this screenshot and write ONE clear instruction step that tells
-a human user what to do on this page to achieve the goal.
+Посмотри на скриншот. Напиши ОДНО короткое предложение — что нужно сделать на этом экране.
 
-Rules:
-- Write in simple, clear language
-- Be specific: name buttons, links, fields as they appear on screen
-- One sentence or two maximum
-- Do not describe what YOU see, write instructions FOR the user
-- Include block index when available from action context.
-- Strict format:
-  "[Блок N] Click [element] to [result]"
-  or
-  "[Блок N] Enter [value] in [field]"
-  If index is unknown, use [Блок ?].
+Правила:
+- Одно предложение, до 12 слов.
+- Начни с глагола: «Нажмите», «Введите», «Выберите», «Прокрутите», «Перейдите».
+- Укажи название элемента в кавычках точно как на экране.
+- Укажи где он находится (в шапке / в меню / слева / внизу).
+- Первое слово строки — «[Блок N]» где N — номер интерактивного элемента.
+  Если неизвестен — «[Блок ?]».
+- Не используй слова «я вижу», «на скриншоте», «страница».
+
+Пример: [Блок 8] Нажмите «Спорт» в верхнем меню.
 """
 
 
@@ -56,9 +56,20 @@ async def ollama_health_check() -> None:
             )
 
 
-async def describe_step(screenshot_base64: str, action_taken: str, goal: str) -> str:
-    """Send a screenshot + context to the VLM and return one short instruction."""
-    prompt = PROMPT_TEMPLATE.format(goal=goal, action_taken=action_taken)
+async def describe_step(
+    screenshot_base64: str,
+    action_taken: str,
+    goal: str,
+    action_type: str | None = None,
+    action_value: str | None = None,
+) -> str:
+    """Send a screenshot + context to the VLM and return a 2-3 sentence instruction."""
+    prompt = PROMPT_TEMPLATE.format(
+        goal=goal,
+        action_taken=action_taken,
+        action_type=action_type or "не определён",
+        action_value=action_value or "—",
+    )
     body: dict[str, Any] = {
         "model": config.OLLAMA_MODEL,
         "messages": [
