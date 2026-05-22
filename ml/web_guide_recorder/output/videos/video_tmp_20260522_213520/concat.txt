@@ -1,0 +1,2 @@
+file /Users/mikhail/Documents/nerd-analytics-platform/ml/web_guide_recorder/output/videos/video_tmp_20260522_213520/seg_000.mp4
+file /Users/mikhail/Documents/nerd-analytics-platform/ml/web_guide_recorder/output/videos/video_tmp_20260522_213520/seg_001.mp4

@@ -7,6 +7,7 @@ import logging
 try:
     from web_guide_recorder import config
     from web_guide_recorder.agent.recorder import Guide, GuideRecorder
+    from web_guide_recorder.agent.vision import describe_all_steps
     from web_guide_recorder.guide.exporter import export_html, export_markdown
     from web_guide_recorder.guide.video_exporter import export_video
 except ModuleNotFoundError:
@@ -14,6 +15,7 @@ except ModuleNotFoundError:
     #   cd web_guide_recorder && python main.py ...
     import config
     from agent.recorder import Guide, GuideRecorder
+    from agent.vision import describe_all_steps
     from guide.exporter import export_html, export_markdown
     from guide.video_exporter import export_video
 
@@ -70,6 +72,10 @@ async def run() -> None:
         logging.getLogger(__name__).warning("Получен Ctrl+C")
 
     if guide is not None:
+        try:
+            await describe_all_steps(guide)
+        except Exception as exc:  # noqa: BLE001
+            logging.getLogger(__name__).exception("describe_all_steps failed: %s", exc)
         await export_outputs(guide, args.format)
     else:
         print("⚠️ Гайд не был создан")

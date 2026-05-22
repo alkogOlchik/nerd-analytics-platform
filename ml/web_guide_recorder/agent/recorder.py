@@ -25,11 +25,11 @@ from PIL import Image
 try:
     from web_guide_recorder import config
     from web_guide_recorder.agent.browser import build_agent, build_browser
-    from web_guide_recorder.agent.vision import describe_step, ollama_health_check
+    from web_guide_recorder.agent.vision import ollama_health_check
 except ModuleNotFoundError:
     import config
     from agent.browser import build_agent, build_browser
-    from agent.vision import describe_step, ollama_health_check
+    from agent.vision import ollama_health_check
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +67,7 @@ class Step:
     action_type: Optional[str] = None
     action_value: Optional[str] = None
     viewport_size: Optional[tuple[int, int]] = None
+    target_text: Optional[str] = None
 
 
 @dataclass
@@ -196,6 +197,7 @@ class GuideRecorder:
                 self._consecutive_noop_steps = 0
 
             target_index, target_bbox = self._extract_target(agent_output, browser_state)
+            target_text = self._extract_target_text(browser_state, target_index)
             action_type, action_value = self._extract_action_type(agent_output)
             viewport_size = self._extract_viewport_size(browser_state)
             logger.info(
@@ -253,25 +255,12 @@ class GuideRecorder:
 
             next_index = len(guide.steps) + 1
             screenshot_path = await self._save_jpeg(png_bytes, next_index)
-            screenshot_b64 = base64.b64encode(png_bytes).decode("utf-8")
-
-            description = await asyncio.wait_for(
-                describe_step(
-                    screenshot_base64=screenshot_b64,
-                    action_taken=action_raw,
-                    goal=guide.goal,
-                    action_type=action_type,
-                    action_value=action_value,
-                ),
-                timeout=config.STEP_TIMEOUT_SECONDS,
-            )
-            description = self._ensure_block_prefix(description, target_index)
 
             step = Step(
                 number=next_index,
                 url=url,
                 screenshot_path=str(screenshot_path),
-                description=description,
+                description="",
                 action_raw=action_raw,
                 target_index=target_index,
                 target_bbox=target_bbox,
@@ -279,21 +268,20 @@ class GuideRecorder:
                 action_type=action_type,
                 action_value=action_value,
                 viewport_size=viewport_size,
+                target_text=target_text,
             )
             guide.steps.append(step)
             self._prev_url = url
             self._prev_hash = phash
             logger.info(
-                "Сохранен шаг %s/%s | url=%s | action=%s | desc=%s | shot=%s",
+                "Сохранен шаг %s/%s | url=%s | action=%s | target_text=%s | shot=%s",
                 next_index,
                 self.max_steps,
                 _short(url, 160) or "(empty)",
                 _short(action_raw, 160) or "(empty)",
-                _short(description, 180) or "(empty)",
+                _short(target_text, 80) or "(empty)",
                 screenshot_path.name,
             )
-        except asyncio.TimeoutError:
-            logger.warning("Шаг %s: таймаут VLM, пропускаю шаг", step_number)
         except Exception as exc:  # noqa: BLE001
             logger.exception("Шаг %s: ошибка записи (%s)", step_number, exc)
 
@@ -493,6 +481,55 @@ class GuideRecorder:
         return None
 
     @staticmethod
+    def _extract_target_text(state: Any, index: Optional[int]) -> Optional[str]:
+        """Достаём текст элемента из selector_map по индексу.
+
+        Разные версии browser-use держат текст в разных полях, поэтому
+        перебираем известные варианты: text/inner_text/aria-label/title/value.
+        """
+        if index is None:
+            return None
+        selector_map = getattr(state, "selector_map", None)
+        if not isinstance(selector_map, dict):
+            return None
+        node = selector_map.get(index)
+        if node is None:
+            node = selector_map.get(str(index))
+        if node is None:
+            return None
+        return GuideRecorder._text_from_node(node)
+
+    @staticmethod
+    def _text_from_node(node: Any) -> Optional[str]:
+        def get(o: Any, name: str) -> Any:
+            if o is None:
+                return None
+            if isinstance(o, dict):
+                return o.get(name)
+            return getattr(o, name, None)
+
+        def clean(v: Any) -> Optional[str]:
+            if not isinstance(v, str):
+                return None
+            s = re.sub(r"\s+", " ", v).strip()
+            if not s:
+                return None
+            return s[:200]
+
+        for attr in ("text", "inner_text", "innerText", "text_content", "textContent", "name"):
+            s = clean(get(node, attr))
+            if s:
+                return s
+
+        attrs = get(node, "attributes")
+        if isinstance(attrs, dict):
+            for k in ("aria-label", "aria_label", "title", "placeholder", "alt", "value", "name"):
+                s = clean(attrs.get(k))
+                if s:
+                    return s
+        return None
+
+    @staticmethod
     def _extract_action_type(agent_output: Any) -> tuple[Optional[str], Optional[str]]:
         """Return (action_type, action_value). action_type is e.g. 'click_element',
         'input_text', 'scroll_down', 'go_to_url'. action_value is text for inputs,
@@ -593,16 +630,6 @@ class GuideRecorder:
             except Exception:  # noqa: BLE001
                 pass
         return True
-
-    @staticmethod
-    def _ensure_block_prefix(description: str, target_index: Optional[int]) -> str:
-        if not description:
-            return "[Блок ?] [автоопределение недоступно]"
-        if re.search(r"^\[Блок\s+[^]]+\]", description.strip()):
-            return description
-        if target_index is None:
-            return f"[Блок ?] {description}"
-        return f"[Блок {target_index}] {description}"
 
     @staticmethod
     def _looks_goal_reached(url: str, goal: str) -> bool:
