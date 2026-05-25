@@ -20,12 +20,14 @@ from pydantic import BaseModel
 try:
     from web_guide_recorder import config
     from web_guide_recorder.agent.recorder import GuideRecorder
+    from web_guide_recorder.agent.vision import describe_all_steps
     from web_guide_recorder.guide.exporter import export_html, export_markdown
     from web_guide_recorder.guide.video_exporter import export_video
 except ModuleNotFoundError:
     # Backward-compatible imports when running from web_guide_recorder/ cwd.
     import config
     from agent.recorder import GuideRecorder
+    from agent.vision import describe_all_steps
     from guide.exporter import export_html, export_markdown
     from guide.video_exporter import export_video
 
@@ -55,6 +57,12 @@ async def _run_job(job_id: str, req: RecordRequest) -> None:
     try:
         recorder = GuideRecorder(headless=req.headless, max_steps=req.max_steps)
         guide = await recorder.record(start_url=req.url, goal=req.goal)
+
+        # Single-pass генерация подписей с контекстом, ДО экспорта.
+        try:
+            await describe_all_steps(guide)
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("describe_all_steps failed: %s", exc)
 
         outputs: Dict[str, str] = {}
         config.GUIDES_PATH.mkdir(parents=True, exist_ok=True)
