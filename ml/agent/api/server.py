@@ -7,18 +7,26 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
+import time
 import uuid
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
-from fastapi import BackgroundTasks, FastAPI, HTTPException
+from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from langchain_core.messages import HumanMessage
 from pydantic import BaseModel, Field
 
 from agent.graph import graph
+from agent.tools.rag_index import DEFAULT_SOURCE, SUPPORTED_EXTS, index_directory
+from agent.tools.rag_tool import (
+    rag_search as rag_search_impl,
+    rag_status,
+    reset_collection,
+)
 from agent.tools.web_guide_tool import (
     DEFAULT_TIMEOUT_SECONDS,
     record_web_guide as record_web_guide_tool,
@@ -272,3 +280,141 @@ async def download_video(job_id: str) -> FileResponse:
         raise HTTPException(status_code=409, detail="Job is not completed yet")
     path = _job_result_path(job, "video_path")
     return FileResponse(str(path), media_type="video/mp4", filename=path.name)
+
+
+# ---------------------------------------------------------------------------
+# RAG knowledge base management
+# ---------------------------------------------------------------------------
+
+_SAFE_NAME_RE = re.compile(r"[^A-Za-zА-Яа-я0-9._\- ]+")
+
+
+def _safe_filename(raw: str, default_ext: str = ".md") -> str:
+    """Sanitize an arbitrary user-supplied filename. Never returns empty,
+    never lets the caller escape the docs directory."""
+    name = Path(raw).name.strip()
+    name = _SAFE_NAME_RE.sub("_", name)
+    if not name:
+        name = f"doc_{int(time.time())}{default_ext}"
+    suffix = Path(name).suffix.lower()
+    if suffix not in SUPPORTED_EXTS:
+        name = f"{Path(name).stem or 'doc'}{default_ext}"
+    return name
+
+
+def _unique_path(base_dir: Path, filename: str) -> Path:
+    candidate = base_dir / filename
+    if not candidate.exists():
+        return candidate
+    stem = candidate.stem
+    suffix = candidate.suffix
+    ts = int(time.time())
+    return base_dir / f"{stem}_{ts}{suffix}"
+
+
+class IngestTextRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=200, description="File name to save under docs/")
+    content: str = Field(..., min_length=1, description="Document body (plain text or markdown)")
+
+
+class RagSearchRequest(BaseModel):
+    query: str = Field(..., min_length=1, max_length=2000)
+    top_k: int = Field(4, ge=1, le=50)
+
+
+async def _index_path(path: Path, *, reset: bool = False) -> Dict[str, Any]:
+    """Run index_directory in a worker thread — embedding calls are blocking."""
+    return await asyncio.to_thread(index_directory, path, reset=reset)
+
+
+@app.get("/rag/status")
+async def get_rag_status() -> Dict[str, Any]:
+    return rag_status()
+
+
+@app.post("/rag/search")
+async def search_rag(req: RagSearchRequest) -> Dict[str, Any]:
+    return await asyncio.to_thread(rag_search_impl, req.query, req.top_k)
+
+
+@app.post("/rag/documents", status_code=201)
+async def upload_document(
+    file: UploadFile = File(...),
+    reset: bool = Form(False),
+) -> Dict[str, Any]:
+    """Upload a single file (md/txt/rst) and index it.
+
+    `reset=true` drops the existing collection before indexing.
+    """
+    docs_dir: Path = DEFAULT_SOURCE
+    docs_dir.mkdir(parents=True, exist_ok=True)
+
+    raw_name = file.filename or f"upload_{int(time.time())}.md"
+    raw_suffix = Path(raw_name).suffix.lower()
+    if raw_suffix not in SUPPORTED_EXTS:
+        raise HTTPException(
+            status_code=415,
+            detail=f"Unsupported extension {raw_suffix!r}. Allowed: {sorted(SUPPORTED_EXTS)}",
+        )
+    safe_name = _safe_filename(raw_name, default_ext=raw_suffix)
+
+    target = _unique_path(docs_dir, safe_name)
+    payload = await file.read()
+    if not payload:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty")
+    await asyncio.to_thread(target.write_bytes, payload)
+
+    result = await _index_path(target, reset=reset)
+    if not result.get("ok"):
+        raise HTTPException(status_code=500, detail=result)
+    return {
+        "saved_to": str(target),
+        "size_bytes": len(payload),
+        "index": result,
+    }
+
+
+@app.post("/rag/documents/text", status_code=201)
+async def upload_text_document(req: IngestTextRequest) -> Dict[str, Any]:
+    """Save an inline document as a file and index it. Convenient for JSON clients
+    that don't want to deal with multipart uploads."""
+    docs_dir: Path = DEFAULT_SOURCE
+    docs_dir.mkdir(parents=True, exist_ok=True)
+
+    safe_name = _safe_filename(req.name)
+    target = _unique_path(docs_dir, safe_name)
+    await asyncio.to_thread(target.write_text, req.content, "utf-8")
+
+    result = await _index_path(target)
+    if not result.get("ok"):
+        raise HTTPException(status_code=500, detail=result)
+    return {
+        "saved_to": str(target),
+        "size_bytes": len(req.content.encode("utf-8")),
+        "index": result,
+    }
+
+
+@app.post("/rag/reindex")
+async def reindex_rag(
+    reset: bool = False,
+    source: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Reindex an entire directory. Defaults to ml/docs/.
+
+    Use `?reset=true` to drop the collection first (full rebuild)."""
+    src_path = Path(source).expanduser() if source else DEFAULT_SOURCE
+    if not src_path.exists():
+        raise HTTPException(status_code=404, detail=f"Source path not found: {src_path}")
+    result = await _index_path(src_path, reset=reset)
+    if not result.get("ok"):
+        raise HTTPException(status_code=500, detail=result)
+    return result
+
+
+@app.delete("/rag/collection")
+async def delete_rag_collection() -> Dict[str, Any]:
+    result = await asyncio.to_thread(reset_collection)
+    if not result.get("ok"):
+        raise HTTPException(status_code=500, detail=result)
+    return result
