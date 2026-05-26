@@ -21,12 +21,17 @@
 - строит word-level TF-IDF и char-level TF-IDF признаки;
 - объединяет признаки через `hstack`;
 - применяет CatBoost-модель;
-- возвращает копию датафрейма с новой колонкой `predicted_sentiment`.
+- дополнительно извлекает слова и биграммы из очищенного комментария, оценивает их тональность той же моделью и формирует колонки `keywords_positive`, `keywords_negative`, `keywords_neutral`;
+- заполняет только ту keyword-колонку, которая соответствует итоговому `predicted_sentiment`, остальные keyword-колонки остаются пустыми списками;
+- возвращает копию датафрейма с новой колонкой `predicted_sentiment` и keyword-колонками.
 
 Основные константы:
 
 - `COMMENT_COLUMN = 'comment'`;
 - `PREDICTION_COLUMN = 'predicted_sentiment'`;
+- `KEYWORDS_POSITIVE_COLUMN = 'keywords_positive'`;
+- `KEYWORDS_NEGATIVE_COLUMN = 'keywords_negative'`;
+- `KEYWORDS_NEUTRAL_COLUMN = 'keywords_neutral'`;
 - `DEFAULT_MODEL_PATH = 'reviews_sentiments_comment_only.cbm'`;
 - `DEFAULT_PREPROCESSING_PATH = 'reviews_sentiments_comment_only_preprocessors.pkl'`.
 
@@ -36,6 +41,8 @@
 - `load_model(model)` - загрузка `.cbm` модели через `CatBoostClassifier().load_model(...)`.
 - `load_preprocessing(preprocessing)` - загрузка словаря препроцессоров через `joblib`.
 - `build_features(df, preprocessing)` - построение sparse-матрицы признаков.
+- `analyze_comment_words(clean_comment, keyword_sentiments)` - распределение слов и биграмм очищенного комментария по тональности.
+- `keep_only_final_sentiment_keywords(keyword_row, final_sentiment)` - оставляет заполненной только keyword-колонку итоговой тональности.
 - `predict_sentiments(df, model=..., preprocessing=...)` - основной интерфейс предсказания.
 
 Что принимает на вход:
@@ -46,7 +53,7 @@
 
 Что возвращает:
 
-- `pandas.DataFrame` со всеми исходными колонками и новой колонкой `predicted_sentiment`.
+- `pandas.DataFrame` со всеми исходными колонками, новой колонкой `predicted_sentiment` и колонками `keywords_positive`, `keywords_negative`, `keywords_neutral`.
 
 ### `reviews_sentiments.ipynb`
 
