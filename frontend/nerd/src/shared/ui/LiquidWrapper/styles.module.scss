@@ -1,0 +1,40 @@
+.liquidWrapper {
+  position: relative;
+  transition: opacity 0.26s ease-out;
+  border-radius: var(--radius-md);
+  color: var(--color-text-accent);
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    border-radius: var(--radius-md);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    box-shadow: var(--shadow-glow-inset-1), var(--shadow-glow-inset-2);
+  }
+
+  &.alwaysActive {
+    color: var(--color-text-white);
+    filter: drop-shadow(var(--shadow-drop));
+    backdrop-filter: brightness(1.1) blur(2px) url(#displacementFilter);
+    box-shadow: var(--shadow-glow-large);
+
+    &::before {
+      opacity: 1;
+    }
+  }
+
+  &:not(.alwaysActive):is(:hover, &.active) {
+    color: var(--color-text-white);
+    filter: drop-shadow(var(--shadow-drop));
+    backdrop-filter: brightness(1.1) blur(2px) url(#displacementFilter);
+    box-shadow: var(--shadow-glow-large);
+
+    &::before {
+      opacity: 1;
+    }
+  }
+}
