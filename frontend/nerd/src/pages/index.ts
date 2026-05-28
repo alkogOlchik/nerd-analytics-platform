@@ -1,1 +1,7 @@
 export * from "./MainPage"
+export * from "./AssistantPage"
+export * from "./TicketsPage"
+export * from "./FavoritesPage"
+export * from "./NotificationsPage"
+export * from "./ProfilePage"
+export * from "./NotFoundPage"

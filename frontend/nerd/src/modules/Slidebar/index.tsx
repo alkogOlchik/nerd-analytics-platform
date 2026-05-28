@@ -1,17 +1,12 @@
+import { Link, useLocation } from "react-router-dom"
 import styles from "./styles.module.scss"
 import type { SidebarProps } from "./types"
-import { useSidebar } from "./useLogic"
 import { NAVIGATION_ITEMS } from "./constants"
 import Logo from "public/Logo-label.png"
 import { LiquidWrapper } from "shared/ui/LiquidWrapper"
 
 export const Sidebar = ({ onSelect }: SidebarProps) => {
-  const { activeItem, handleSelect } = useSidebar()
-
-  const onItemClick = (id: string) => {
-    handleSelect(id)
-    onSelect(id)
-  }
+  const location = useLocation()
 
   return (
     <aside className={styles.sidebar}>
@@ -20,24 +15,27 @@ export const Sidebar = ({ onSelect }: SidebarProps) => {
       <nav className={styles.navigation}>
         {NAVIGATION_ITEMS.map((item) => {
           const Icon = item.icon
+          const isActive = location.pathname === item.path
 
           return (
-            <LiquidWrapper
+            <Link
               key={item.id}
-              isActive={activeItem === item.id}
-              onClick={() => onItemClick(item.id)}
-              className={styles.navItem}
+              to={item.path}
+              className={styles.navLink}
+              onClick={() => onSelect?.(item.id)}
             >
-              <div className={styles.left}>
-                <Icon size={20} />
-                <span>{item.label}</span>
-              </div>
-              {!!item.notifications && (
-                <LiquidWrapper alwaysActive>
-                  <div className={styles.badge}>{item.notifications}</div>
-                </LiquidWrapper>
-              )}
-            </LiquidWrapper>
+              <LiquidWrapper isActive={isActive} className={styles.navItem}>
+                <div className={styles.left}>
+                  <Icon size={20} />
+                  <span>{item.label}</span>
+                </div>
+                {!!item.notifications && (
+                  <LiquidWrapper alwaysActive>
+                    <div className={styles.badge}>{item.notifications}</div>
+                  </LiquidWrapper>
+                )}
+              </LiquidWrapper>
+            </Link>
           )
         })}
       </nav>

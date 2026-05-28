@@ -35,6 +35,12 @@
   gap: 12px;
 }
 
+.navLink {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
 .navItem {
   display: flex;
   align-items: center;

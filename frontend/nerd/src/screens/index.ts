@@ -1,1 +1,7 @@
 export * from "./MainScreen"
+export * from "./AssistantScreen"
+export * from "./TicketsScreen"
+export * from "./FavoritesScreen"
+export * from "./NotificationsScreen"
+export * from "./ProfileScreen"
+export * from "./NotFoundScreen"
