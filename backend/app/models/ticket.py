@@ -19,8 +19,13 @@ class Ticket(Base):
         UUID(as_uuid=True), ForeignKey("employees.id"), nullable=True, index=True
     )
     product: Mapped[str] = mapped_column(String(64), nullable=False)
-    status: Mapped[str] = mapped_column(String(32), nullable=False, default="open")
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="принято")
     priority: Mapped[str] = mapped_column(String(16), nullable=False, default="medium")
+    user_priority: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    admin_priority: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    guest_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    guest_token: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True)
+    status_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     deadline: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -40,6 +45,8 @@ class Ticket(Base):
     notifications = relationship("Notification", back_populates="ticket", lazy="selectin")
     reviews = relationship("Review", back_populates="ticket", lazy="selectin")
     chat_messages = relationship("ChatHistory", back_populates="ticket", lazy="selectin")
+    status_history = relationship("TicketStatusHistory", back_populates="ticket", lazy="selectin")
+    internal_comments = relationship("InternalComment", back_populates="ticket", lazy="selectin")
 
 
 class Attachment(Base, TimestampMixin):

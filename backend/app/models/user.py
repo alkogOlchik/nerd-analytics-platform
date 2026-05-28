@@ -1,7 +1,9 @@
 import uuid
 from datetime import date
 
-from sqlalchemy import Date, Integer, String
+from datetime import datetime
+
+from sqlalchemy import Boolean, Date, DateTime, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -19,6 +21,9 @@ class Client(Base, TimestampMixin):
     gender: Mapped[str | None] = mapped_column(String(16), nullable=True)
     city: Mapped[str | None] = mapped_column(String(128), nullable=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    deletion_requested_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    notify_email: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    notify_push: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     tickets = relationship("Ticket", back_populates="client", lazy="selectin")
     notifications = relationship("Notification", back_populates="client", lazy="selectin")
@@ -37,5 +42,8 @@ class Employee(Base, TimestampMixin):
     sec_level: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="active")
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    role: Mapped[str] = mapped_column(String(32), nullable=False, default="operator")
 
     assigned_tickets = relationship("Ticket", back_populates="responsible", lazy="selectin")
+    status_changes = relationship("TicketStatusHistory", back_populates="employee", lazy="selectin")
+    internal_comments = relationship("InternalComment", back_populates="employee", lazy="selectin")

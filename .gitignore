@@ -2,6 +2,8 @@
 .env
 .env.local
 *.env
+!.env.example
+!**/.env.example
 
 # Python
 __pycache__/
@@ -23,4 +25,10 @@ env/
 #media
 *.mp4
 *.wav
-*.md
+
+# Notebooks: код в репо, данные — локально
+backend/notebooks/data/
+backend/notebooks/**/*.csv
+backend/notebooks/**/*.xlsx
+.ipynb_checkpoints/
+

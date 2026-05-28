@@ -3,7 +3,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.api.deps import CurrentUser, get_current_user
 from backend.app.db.session import get_db
-from backend.app.schemas.auth import LoginRequest, LogoutRequest, RefreshRequest, TokenResponse
+from backend.app.models.enums import UserRole
+from backend.app.schemas.auth import (
+    AccountDeletionResponse,
+    LoginRequest,
+    LogoutRequest,
+    NotificationPreferencesResponse,
+    NotificationPreferencesUpdate,
+    OAuthCodeRequest,
+    RefreshRequest,
+    TokenResponse,
+)
 from backend.app.schemas.user import ClientRegister, ClientResponse, UserMeResponse
 from backend.app.services import auth_service
 
@@ -40,3 +50,39 @@ async def me(current_user: CurrentUser = Depends(get_current_user)):
         email=current_user.email,
         full_name=current_user.full_name,
     )
+
+
+@router.delete("/me", response_model=AccountDeletionResponse)
+async def delete_me(
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    if current_user.role != UserRole.client:
+        from fastapi import HTTPException, status
+
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Clients only")
+    message = await auth_service.request_account_deletion(db, current_user.id)
+    return AccountDeletionResponse(message=message)
+
+
+@router.patch("/me/notifications", response_model=NotificationPreferencesResponse)
+async def update_notifications(
+    data: NotificationPreferencesUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    if current_user.role != UserRole.client:
+        from fastapi import HTTPException, status
+
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Clients only")
+    return await auth_service.update_notification_preferences(
+        db,
+        current_user.id,
+        notify_email=data.notify_email,
+        notify_push=data.notify_push,
+    )
+
+
+@router.post("/oauth/{provider}", response_model=TokenResponse)
+async def oauth_login(provider: str, data: OAuthCodeRequest, db: AsyncSession = Depends(get_db)):
+    return await auth_service.oauth_login(db, provider, data.code)

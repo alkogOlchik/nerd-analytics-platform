@@ -48,6 +48,10 @@ class TicketResponse(BaseModel):
     product: str
     status: str
     priority: str
+    user_priority: str | None = None
+    admin_priority: str | None = None
+    guest_email: str | None = None
+    status_updated_at: datetime | None = None
     date: datetime
     deadline: datetime
     closed_at: datetime | None
