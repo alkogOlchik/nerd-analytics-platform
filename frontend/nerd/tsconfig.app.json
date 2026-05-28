@@ -25,6 +25,7 @@
       "screens/*": ["screens/*"],
       "pages/*": ["pages/*"],
       "shared/*": ["shared/*"],
+      "public/*": ["../public/*"]
     },
 
     /* Linting */

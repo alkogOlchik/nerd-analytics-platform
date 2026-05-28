@@ -1,0 +1,63 @@
+.wrapper {
+  position: relative;
+  margin-right: 20px;
+
+}
+
+.glow {
+  position: absolute;
+  left: 60%;
+  top: 15%;
+  width: 250px;
+  height: 200px;
+  border-radius: 50%;
+  background: var(--color-purple-glow);
+  filter: blur(40px);
+  z-index: 0;
+}
+
+.avatarCircle {
+  position: relative;
+  top: 20px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  margin-left: 25px;
+  width: 120px;
+  height: 150px; 
+  border-radius: 30%;
+  mask-image: linear-gradient(to bottom, black 0%, black 85%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom,black 0%,black 85%,transparent 100%);
+  overflow: hidden;
+  z-index: 2;
+
+}
+
+.avatarImage {
+  height: 115%;
+  object-fit: cover; 
+}
+
+.card {
+  position: relative;
+  width: 310px;
+  padding: 20px;
+  border-radius: 28px;
+  border: 1px solid rgba(192, 132, 252, 0.15);
+  background: transparent;
+  backdrop-filter: blur(24px);
+  box-shadow: 0 0 50px rgba(139, 92, 246, 0.15);
+  overflow: hidden;
+  z-index: 1;
+}
+
+.title {
+  margin-bottom: 10px;
+  color: white;
+  line-height: 1.1;
+}
+
+.description {
+  color: #d2c8ff;
+  line-height: 1.45;
+}

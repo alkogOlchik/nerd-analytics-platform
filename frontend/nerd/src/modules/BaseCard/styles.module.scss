@@ -1,0 +1,14 @@
+.card {
+  border-radius: var(--radius-xl);
+  border: var(--border-default);
+  transition: all 0.3s ease;
+
+  &.hoverable:hover {
+    border-color: var(--color-purple-border-hover);
+    box-shadow: var(--shadow-card-hover);
+  }
+
+  &.clickable {
+    cursor: pointer;
+  }
+}
