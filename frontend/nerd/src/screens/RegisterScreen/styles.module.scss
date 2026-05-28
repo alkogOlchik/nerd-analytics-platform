@@ -1,0 +1,214 @@
+.page {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 40px 16px;
+  background: var(--color-bg-secondary);
+  overflow: hidden;
+}
+
+.blob {
+  position: absolute;
+  border-radius: var(--radius-circle);
+  filter: blur(140px);
+  opacity: 0.7;
+  pointer-events: none;
+  background: var(--color-blob-dark);
+}
+
+.blob1 {
+  width: 400px;
+  height: 400px;
+  top: -100px;
+  right: -100px;
+}
+
+.blob2 {
+  width: 350px;
+  height: 350px;
+  bottom: -80px;
+  left: -80px;
+}
+
+.card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 460px;
+  background: var(--color-bg-card);
+  border: var(--border-default);
+  border-radius: var(--radius-xl);
+  padding: 40px;
+  box-shadow: var(--shadow-sidebar);
+}
+
+.logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 15px;
+
+  img {
+    height: 90px;
+    width: auto;
+  }
+}
+
+.title {
+  font-size: 28px;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-white);
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.field {
+  margin-bottom: 20px;
+}
+
+.label {
+  display: block;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-accent);
+  margin-bottom: 8px;
+}
+
+.input {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--color-bg-secondary);
+  border: var(--border-default);
+  border-radius: 8px;
+  color: var(--color-text-white);
+  font-size: var(--font-size-sm);
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &:focus {
+    border-color: var(--color-purple-accent);
+    box-shadow: 0 0 0 3px rgba(155, 116, 245, 0.1);
+  }
+
+  &::placeholder {
+    color: var(--color-text-tertiary);
+  }
+}
+
+.select {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--color-bg-secondary);
+  border: var(--border-default);
+  border-radius: 8px;
+  color: var(--color-text-white);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: border-color 0.2s;
+  appearance: none;
+
+  &:focus {
+    border-color: var(--color-purple-accent);
+    box-shadow: 0 0 0 3px rgba(155, 116, 245, 0.1);
+  }
+
+  option {
+    background: var(--color-bg-card);
+    color: var(--color-text-white);
+  }
+}
+
+.optionalToggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 10px 14px;
+  background: transparent;
+  border: var(--border-default);
+  border-radius: 8px;
+  color: var(--color-text-accent);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+
+  &:hover {
+    border-color: var(--color-purple-accent);
+    color: var(--color-purple-accent);
+    background: rgba(155, 116, 245, 0.05);
+  }
+
+  svg {
+    transition: transform 0.2s;
+  }
+
+  &.open svg {
+    transform: rotate(180deg);
+  }
+}
+
+.optionalFields {
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.error {
+  padding: 12px 16px;
+  background: rgba(255, 107, 107, 0.08);
+  border: 1px solid rgba(255, 107, 107, 0.25);
+  border-radius: 8px;
+  color: #ff6b6b;
+  font-size: var(--font-size-sm);
+  margin-bottom: 20px;
+}
+
+.button {
+  width: 100%;
+  padding: 14px;
+  background: var(--color-purple-button);
+  color: var(--color-text-white);
+  border-radius: 8px;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  margin-top: 8px;
+
+  &:hover:not(:disabled) {
+    background: var(--color-purple-accent);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.footer {
+  margin-top: 24px;
+  text-align: center;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+
+  a {
+    color: var(--color-purple-accent);
+    font-weight: var(--font-weight-semibold);
+    transition: color 0.2s;
+
+    &:hover {
+      color: var(--color-purple-light);
+    }
+  }
+}

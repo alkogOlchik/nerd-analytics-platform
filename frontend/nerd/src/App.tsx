@@ -7,31 +7,32 @@ import { FavoritesPage } from "./pages/FavoritesPage"
 import { NotificationsPage } from "./pages/NotificationsPage"
 import { ProfilePage } from "./pages/ProfilePage"
 import { NotFoundPage } from "./pages/NotFoundPage"
+import { LoginPage } from "./pages/LoginPage"
+import { RegisterPage } from "./pages/RegisterPage"
+import { PrivateRoute } from "./shared/ui/PrivateRoute"
 
 const appRoutes: RouteObject[] = [
+  {
+    path: routes.login,
+    element: <LoginPage />,
+  },
+  {
+    path: routes.register,
+    element: <RegisterPage />,
+  },
   {
     path: routes.main,
     element: <MainPage />,
   },
   {
-    path: routes.assistant,
-    element: <AssistantPage />,
-  },
-  {
-    path: routes.tickets,
-    element: <TicketsPage />,
-  },
-  {
-    path: routes.favorites,
-    element: <FavoritesPage />,
-  },
-  {
-    path: routes.notifications,
-    element: <NotificationsPage />,
-  },
-  {
-    path: routes.profile,
-    element: <ProfilePage />,
+    element: <PrivateRoute />,
+    children: [
+      { path: routes.assistant, element: <AssistantPage /> },
+      { path: routes.tickets, element: <TicketsPage /> },
+      { path: routes.favorites, element: <FavoritesPage /> },
+      { path: routes.notifications, element: <NotificationsPage /> },
+      { path: routes.profile, element: <ProfilePage /> },
+    ],
   },
   {
     path: "*",
