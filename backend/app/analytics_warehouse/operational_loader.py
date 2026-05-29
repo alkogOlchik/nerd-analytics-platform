@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import uuid as uuid_module
 from types import SimpleNamespace
 from typing import Any
 
@@ -129,3 +130,30 @@ def get_attr(obj: Any, name: str, default: Any = None) -> Any:
     if isinstance(obj, dict):
         return obj.get(name, default)
     return getattr(obj, name, default)
+
+
+def as_uuid(value: Any):
+    """UUID-объект для записи в витрину (тот же id, что в nerd_db)."""
+    import uuid as uuid_module
+
+    key = normalize_key(value)
+    if not key:
+        return None
+    return uuid_module.UUID(key)
+
+
+def normalize_key(value: Any) -> str | None:
+    """Единый ключ для UUID (tickets.id, chat_id, ticket_id в FK)."""
+    if value is None:
+        return None
+    if isinstance(value, float) and str(value) == "nan":
+        return None
+    if isinstance(value, uuid_module.UUID):
+        return str(value).lower()
+    s = str(value).strip().lower()
+    if not s or s in ("nan", "none", ""):
+        return None
+    try:
+        return str(uuid_module.UUID(s)).lower()
+    except ValueError:
+        return s

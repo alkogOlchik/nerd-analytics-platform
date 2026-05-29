@@ -1,9 +1,13 @@
-"""Схема аналитической витрины для дашбордов D1–D6."""
+"""Схема аналитической витрины для дашбордов D1–D6.
 
+ticket_id / dialog_id / user_id / review_id — те же UUID, что в nerd_db (tickets.id, chat_id, clients.id, reviews.id).
+"""
+
+import uuid
 from datetime import date
 
 from sqlalchemy import Date, Float, Integer, String, Text
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from backend.app.analytics_warehouse.base import AnalyticsBase
@@ -14,7 +18,7 @@ class General(AnalyticsBase):
 
     __tablename__ = "general"
 
-    ticket_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ticket_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
     created_at: Mapped[date | None] = mapped_column(Date, nullable=True)
     closed_at: Mapped[date | None] = mapped_column(Date, nullable=True)
     product: Mapped[str | None] = mapped_column(String(128), nullable=True)
@@ -35,8 +39,8 @@ class AiEffective(AnalyticsBase):
 
     __tablename__ = "ai_effective"
 
-    dialog_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    ticket_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    dialog_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    ticket_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
     date: Mapped[date | None] = mapped_column(Date, nullable=True)
     product: Mapped[str | None] = mapped_column(String(128), nullable=True)
     msg_count_before_escalation: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -55,7 +59,7 @@ class AdminEffective(AnalyticsBase):
 
     __tablename__ = "admin_effective"
 
-    ticket_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ticket_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
     date: Mapped[date | None] = mapped_column(Date, nullable=True)
     hour: Mapped[int | None] = mapped_column(Integer, nullable=True)
     day_of_week: Mapped[str | None] = mapped_column(String(32), nullable=True)
@@ -78,7 +82,7 @@ class FactUsers(AnalyticsBase):
 
     __tablename__ = "fact_users"
 
-    user_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
     registration_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     gender: Mapped[str | None] = mapped_column(String(16), nullable=True)
     age_group: Mapped[str | None] = mapped_column(String(32), nullable=True)
@@ -99,8 +103,8 @@ class FactReviews(AnalyticsBase):
 
     __tablename__ = "fact_reviews"
 
-    review_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    ticket_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    review_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    ticket_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
     date: Mapped[date | None] = mapped_column(Date, nullable=True)
     product: Mapped[str | None] = mapped_column(String(128), nullable=True)
     category: Mapped[str | None] = mapped_column(String(128), nullable=True)
@@ -118,7 +122,7 @@ class FactProblems(AnalyticsBase):
 
     __tablename__ = "fact_problems"
 
-    ticket_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ticket_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
     date: Mapped[date | None] = mapped_column(Date, nullable=True)
     hour: Mapped[int | None] = mapped_column(Integer, nullable=True)
     day_of_week: Mapped[str | None] = mapped_column(String(32), nullable=True)

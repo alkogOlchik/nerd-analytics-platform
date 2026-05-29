@@ -19,7 +19,12 @@ from backend.app.analytics_warehouse.models import (
     FactUsers,
     General,
 )
-from backend.app.analytics_warehouse.operational_loader import get_attr, load_operational
+from backend.app.analytics_warehouse.operational_loader import (
+    as_uuid,
+    get_attr,
+    load_operational,
+    normalize_key,
+)
 
 CLOSED_STATUSES = {"закрыто", "closed"}
 
@@ -96,42 +101,56 @@ async def build_warehouse(
     clients, employees, tickets, reviews, chats = await load_operational(odb)
     await _clear_warehouse(adb)
 
-    client_map = {
-        c.id: idx + 1
-        for idx, c in enumerate(sorted(clients, key=lambda x: get_attr(x, "created_at")))
+    sorted_clients = sorted(clients, key=lambda x: get_attr(x, "created_at") or datetime.min.replace(tzinfo=UTC))
+    sorted_tickets = sorted(
+        tickets,
+        key=lambda t: (
+            get_attr(t, "date") or datetime.min.replace(tzinfo=UTC),
+            normalize_key(get_attr(t, "id")) or "",
+        ),
+    )
+    ticket_by_key = {normalize_key(get_attr(t, "id")): t for t in tickets if normalize_key(get_attr(t, "id"))}
+    employee_map = {
+        normalize_key(get_attr(e, "id")): get_attr(e, "full_name") or get_attr(e, "username")
+        for e in employees
+        if normalize_key(get_attr(e, "id"))
     }
-    ticket_map = {
-        t.id: idx + 1 for idx, t in enumerate(sorted(tickets, key=lambda x: get_attr(x, "date")))
+    client_by_id = {
+        normalize_key(get_attr(c, "id")): c for c in clients if normalize_key(get_attr(c, "id"))
     }
-    employee_map = {e.id: get_attr(e, "full_name") or get_attr(e, "username") for e in employees}
-    client_by_id = {c.id: c for c in clients}
 
     review_by_ticket: dict = {}
     for r in reviews:
-        tid = get_attr(r, "ticket_id")
-        if tid:
-            review_by_ticket[tid] = r
+        tkey = normalize_key(get_attr(r, "ticket_id"))
+        if tkey:
+            review_by_ticket[tkey] = r
 
     chats_by_ticket: dict = defaultdict(list)
     chats_by_chat: dict = defaultdict(list)
     for ch in chats:
-        tid = get_attr(ch, "ticket_id")
-        cid = get_attr(ch, "chat_id")
-        if tid:
-            chats_by_ticket[tid].append(ch)
-        chats_by_chat[cid].append(ch)
+        tkey = normalize_key(get_attr(ch, "ticket_id"))
+        ckey = normalize_key(get_attr(ch, "chat_id"))
+        if tkey:
+            chats_by_ticket[tkey].append(ch)
+        if ckey:
+            chats_by_chat[ckey].append(ch)
 
     first_admin_at: dict = {}
-    for tid, msgs in chats_by_ticket.items():
+    for tkey, msgs in chats_by_ticket.items():
         admin_msgs = [m for m in msgs if get_attr(m, "role") == "admin"]
         if admin_msgs:
-            first_admin_at[tid] = min(get_attr(m, "created_at") for m in admin_msgs)
+            first_admin_at[tkey] = min(get_attr(m, "created_at") for m in admin_msgs)
 
-    # ── D1: general ──
-    for ticket in tickets:
-        tid = ticket_map[ticket.id]
-        client = client_by_id.get(ticket.client_id)
-        rev = review_by_ticket.get(ticket.id)
+    unique_chats = sorted(chats_by_chat.keys())
+
+    # ── D1: general (ticket_id = tickets.id из nerd_db, UUID) ──
+    for ticket in sorted_tickets:
+        tkey = normalize_key(get_attr(ticket, "id"))
+        tid = as_uuid(get_attr(ticket, "id"))
+        if not tid:
+            continue
+        client = client_by_id.get(normalize_key(get_attr(ticket, "client_id")))
+        rev = review_by_ticket.get(tkey)
         closed = get_attr(ticket, "closed_at")
         t_date = get_attr(ticket, "date")
         ttl = None
@@ -146,8 +165,8 @@ async def build_warehouse(
                 category=get_attr(ticket, "final_category") or get_attr(ticket, "ai_suggested_category"),
                 status=get_attr(ticket, "status"),
                 priority=_priority_label(ticket),
-                admin=employee_map.get(get_attr(ticket, "responsible_id"))
-                if get_attr(ticket, "responsible_id")
+                admin=employee_map.get(normalize_key(get_attr(ticket, "responsible_id")))
+                if normalize_key(get_attr(ticket, "responsible_id"))
                 else None,
                 city=get_attr(client, "city") if client else None,
                 age_group=_age_group(get_attr(client, "age")) if client else None,
@@ -158,58 +177,73 @@ async def build_warehouse(
             )
         )
 
-    # ── D2: ai_effective (one row per chat_id) ──
-    dialog_id = 1
-    for chat_id, msgs in sorted(chats_by_chat.items(), key=lambda x: str(x[0])):
-        msgs = sorted(msgs, key=lambda m: get_attr(m, "created_at"))
+    # ── D2: ai_effective (как в data_to_dasboards.ipynb) ──
+    dialog_count = 0
+    for ckey in unique_chats:
+        msgs = sorted(chats_by_chat[ckey], key=lambda m: get_attr(m, "created_at"))
         if not msgs:
             continue
-        ticket_uuid = get_attr(msgs[0], "ticket_id")
-        ticket_int = ticket_map.get(ticket_uuid) if ticket_uuid else None
-        ticket_obj = next((t for t in tickets if t.id == ticket_uuid), None) if ticket_uuid else None
-        resolved = any(get_attr(m, "resolved_by_ai") for m in msgs)
-        escalated = 0 if resolved else 1
+        first = msgs[0]
+        dialog_id = as_uuid(ckey)
+        if not dialog_id:
+            continue
+        ticket_key = normalize_key(get_attr(first, "ticket_id"))
+        ticket_uuid = as_uuid(get_attr(first, "ticket_id"))
+        ticket_obj = ticket_by_key.get(ticket_key) if ticket_key else None
+
+        # Ноутбук: эскалация = в чате есть ticket_id; решён ИИ = ticket_id пустой
+        is_resolved_by_ai = 1 if ticket_key is None else 0
+        escalated_to_human = 1 if ticket_key is not None else 0
+
+        ai_msgs = [m for m in msgs if get_attr(m, "role") == "ai"]
+        msg_count = len(ai_msgs)
         resolution_ai = None
-        if resolved and len(msgs) >= 2:
+        if is_resolved_by_ai and len(msgs) >= 2:
             resolution_ai = (
                 get_attr(msgs[-1], "created_at") - get_attr(msgs[0], "created_at")
             ).total_seconds() / 60
         resolution_human = None
-        if ticket_obj and get_attr(ticket_obj, "closed_at") and escalated:
+        if ticket_obj and get_attr(ticket_obj, "closed_at") and escalated_to_human:
             resolution_human = (
                 get_attr(ticket_obj, "closed_at") - get_attr(msgs[-1], "created_at")
             ).total_seconds() / 60
 
+        ai_cat = get_attr(first, "category")
+        final_cat = get_attr(ticket_obj, "final_category") if ticket_obj else ai_cat
+        admin_changed = 0
+        if escalated_to_human and ticket_obj:
+            if ai_cat and final_cat and ai_cat == final_cat:
+                admin_changed = 0
+            elif get_attr(ticket_obj, "is_admin_changed"):
+                admin_changed = 1
+
         adb.add(
             AiEffective(
                 dialog_id=dialog_id,
-                ticket_id=ticket_int,
+                ticket_id=ticket_uuid,
                 date=_to_date(get_attr(msgs[0], "created_at")),
-                product=get_attr(msgs[0], "product")
+                product=get_attr(first, "product")
                 or (get_attr(ticket_obj, "product") if ticket_obj else None),
-                msg_count_before_escalation=len(msgs),
-                is_resolved_by_ai=1 if resolved else 0,
-                escalated_to_human=escalated,
+                msg_count_before_escalation=msg_count,
+                is_resolved_by_ai=is_resolved_by_ai,
+                escalated_to_human=escalated_to_human,
                 ai_response_sec=None,
-                ai_category_suggested=get_attr(ticket_obj, "ai_suggested_category")
-                if ticket_obj
-                else get_attr(msgs[0], "category"),
-                admin_changed_category=1
-                if ticket_obj and get_attr(ticket_obj, "is_admin_changed")
-                else 0,
-                final_category=get_attr(ticket_obj, "final_category")
-                if ticket_obj
-                else get_attr(msgs[0], "category"),
+                ai_category_suggested=ai_cat,
+                admin_changed_category=admin_changed,
+                final_category=final_cat,
                 resolution_time_ai_min=round(resolution_ai, 2) if resolution_ai else None,
                 resolution_time_human_min=round(resolution_human, 2) if resolution_human else None,
             )
         )
-        dialog_id += 1
+        dialog_count += 1
 
     # ── D3: admin_effective ──
-    for ticket in tickets:
-        tid = ticket_map[ticket.id]
-        first_admin = first_admin_at.get(ticket.id)
+    for ticket in sorted_tickets:
+        tkey = normalize_key(get_attr(ticket, "id"))
+        tid = as_uuid(get_attr(ticket, "id"))
+        if not tid:
+            continue
+        first_admin = first_admin_at.get(tkey)
         t_date = get_attr(ticket, "date")
         ttfr = None
         if first_admin and t_date:
@@ -232,7 +266,7 @@ async def build_warehouse(
             else 0 if ttr is not None and sla_ttr is not None
             else None
         )
-        rev = review_by_ticket.get(ticket.id)
+        rev = review_by_ticket.get(tkey)
         dt = t_date
         adb.add(
             AdminEffective(
@@ -243,8 +277,8 @@ async def build_warehouse(
                 product=get_attr(ticket, "product"),
                 category=get_attr(ticket, "final_category") or get_attr(ticket, "ai_suggested_category"),
                 priority=_priority_label(ticket),
-                admin=employee_map.get(get_attr(ticket, "responsible_id"))
-                if get_attr(ticket, "responsible_id")
+                admin=employee_map.get(normalize_key(get_attr(ticket, "responsible_id")))
+                if normalize_key(get_attr(ticket, "responsible_id"))
                 else None,
                 ttfr_min=round(ttfr, 2) if ttfr is not None else None,
                 ttr_min=round(ttr, 2) if ttr is not None else None,
@@ -260,12 +294,17 @@ async def build_warehouse(
     # ── D4: fact_users ──
     tickets_by_client: dict = defaultdict(list)
     for t in tickets:
-        tickets_by_client[t.client_id].append(t)
+        ckey = normalize_key(get_attr(t, "client_id"))
+        if ckey:
+            tickets_by_client[ckey].append(t)
 
-    for client in clients:
-        uid = client_map[client.id]
+    for client in sorted_clients:
+        ckey = normalize_key(get_attr(client, "id"))
+        uid = as_uuid(get_attr(client, "id"))
+        if not uid:
+            continue
         client_tickets = sorted(
-            tickets_by_client.get(client.id, []), key=lambda t: get_attr(t, "date")
+            tickets_by_client.get(ckey, []), key=lambda t: get_attr(t, "date")
         )
         products = sorted({get_attr(t, "product") for t in client_tickets})
         open_cnt = sum(1 for t in client_tickets if not _is_closed(get_attr(t, "status")))
@@ -304,14 +343,17 @@ async def build_warehouse(
         )
 
     # ── D5: fact_reviews ──
-    for idx, review in enumerate(sorted(reviews, key=lambda r: get_attr(r, "created_at")), start=1):
-        client = client_by_id.get(review.client_id)
-        rid = get_attr(review, "ticket_id")
-        ticket = next((t for t in tickets if t.id == rid), None) if rid else None
+    for review in sorted(reviews, key=lambda r: get_attr(r, "created_at")):
+        review_uuid = as_uuid(get_attr(review, "id"))
+        if not review_uuid:
+            continue
+        client = client_by_id.get(normalize_key(get_attr(review, "client_id")))
+        rid = normalize_key(get_attr(review, "ticket_id"))
+        ticket = ticket_by_key.get(rid) if rid else None
         adb.add(
             FactReviews(
-                review_id=idx,
-                ticket_id=ticket_map.get(rid) if rid else None,
+                review_id=review_uuid,
+                ticket_id=as_uuid(get_attr(review, "ticket_id")),
                 date=_to_date(get_attr(review, "created_at")),
                 product=get_attr(review, "product") or (get_attr(ticket, "product") if ticket else None),
                 category=get_attr(review, "final_category") or get_attr(review, "ai_suggested_category"),
@@ -330,7 +372,7 @@ async def build_warehouse(
     counts_48h: Counter[tuple[str, str]] = Counter()
     history_counts: dict[tuple[str, str], list[int]] = defaultdict(list)
 
-    for ticket in tickets:
+    for ticket in sorted_tickets:
         cat = (
             get_attr(ticket, "final_category")
             or get_attr(ticket, "ai_suggested_category")
@@ -345,7 +387,7 @@ async def build_warehouse(
     while day_cursor < now:
         window_end = day_cursor + timedelta(hours=48)
         window_counter: Counter[tuple[str, str]] = Counter()
-        for ticket in tickets:
+        for ticket in sorted_tickets:
             t_date = get_attr(ticket, "date")
             if t_date and day_cursor <= t_date < window_end:
                 cat = (
@@ -369,9 +411,12 @@ async def build_warehouse(
         if count_48h > avg + 2 * std:
             anomaly_keys.add(key)
 
-    for ticket in tickets:
-        tid = ticket_map[ticket.id]
-        client = client_by_id.get(ticket.client_id)
+    for ticket in sorted_tickets:
+        tkey = normalize_key(get_attr(ticket, "id"))
+        tid = as_uuid(get_attr(ticket, "id"))
+        if not tid:
+            continue
+        client = client_by_id.get(normalize_key(get_attr(ticket, "client_id")))
         dt = get_attr(ticket, "date")
         closed_at = get_attr(ticket, "closed_at")
         ttr_h = None
@@ -403,20 +448,35 @@ async def build_warehouse(
     # ── D6: fact_forecast (optional xlsx from time_series model) ──
     forecast_rows = 0
     if forecast_xlsx and forecast_xlsx.is_file():
-        try:
-            import pandas as pd
+        import logging
 
-            df = pd.read_excel(forecast_xlsx)
+        import pandas as pd
+
+        logger = logging.getLogger(__name__)
+        try:
+            df = pd.read_excel(forecast_xlsx, sheet_name=0)
             col_map = {
                 "forecast_date": ["forecast_date", "date", "Дата"],
-                "category": ["category", "final_category", "Категория"],
-                "product": ["product", "Продукт"],
-                "predicted_count": ["predicted_count", "predicted", "count", "Прогноз"],
+                "category": [
+                    "category",
+                    "final_category",
+                    "Категория",
+                    "ticket_category",
+                ],
+                "product": ["product", "Продукт", "product_name"],
+                "predicted_count": [
+                    "predicted_count",
+                    "predicted",
+                    "prediction",
+                    "prediction_rounded",
+                    "count",
+                    "Прогноз",
+                ],
             }
 
-            def _pick(row_cols, names):
+            def _pick(cols: list, names: list[str]) -> str | None:
                 for n in names:
-                    if n in row_cols:
+                    if n in cols:
                         return n
                 return None
 
@@ -425,26 +485,31 @@ async def build_warehouse(
             cat_c = _pick(cols, col_map["category"])
             prod_c = _pick(cols, col_map["product"])
             pred_c = _pick(cols, col_map["predicted_count"])
-            if fd and cat_c and prod_c and pred_c:
+            if not all([fd, cat_c, prod_c, pred_c]):
+                logger.warning(
+                    "forecast xlsx: не найдены колонки (есть %s). Нужны date, category, product, prediction",
+                    cols,
+                )
+            else:
                 for fid, (_, row) in enumerate(df.iterrows(), start=1):
-                    d = pd.to_datetime(row[fd])
+                    d = pd.to_datetime(row[fd])  # type: ignore[index]
                     adb.add(
                         FactForecast(
                             forecast_id=fid,
                             forecast_date=d.date(),
-                            category=str(row[cat_c]),
-                            product=str(row[prod_c]),
-                            predicted_count=float(row[pred_c]),
+                            category=str(row[cat_c]),  # type: ignore[index]
+                            product=str(row[prod_c]),  # type: ignore[index]
+                            predicted_count=float(row[pred_c]),  # type: ignore[index]
                         )
                     )
                     forecast_rows += 1
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.exception("Не удалось загрузить fact_forecast из %s: %s", forecast_xlsx, exc)
 
     await adb.commit()
     return {
         "general": len(tickets),
-        "ai_effective": dialog_id - 1,
+        "ai_effective": dialog_count,
         "admin_effective": len(tickets),
         "fact_users": len(clients),
         "fact_reviews": len(reviews),
