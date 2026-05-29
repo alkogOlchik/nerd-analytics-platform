@@ -15,7 +15,9 @@ export const MainScreen = () => {
       <Sidebar onSelect={(id) => console.log(id)} />
 
       <main className={styles.main}>
-        <UserMenu />
+        <div className={styles.mainHeader}>
+          <UserMenu />
+        </div>
 
         <section className={clsx(styles.helloSection, styles.section)}>
           <div className={styles.helloLeftContent}>

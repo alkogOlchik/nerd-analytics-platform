@@ -1,14 +1,15 @@
 import { User2, LogOut, Settings, User } from "lucide-react"
 import { Link } from "react-router-dom"
+import { authRepository } from "data/repositories/Auth"
 import { routes } from "shared/utils/routes"
 import { useUserMenu } from "./useLogic/useUserMenu"
 import type { UserMenuProps } from "./types"
 import styles from "./styles.module.scss"
 
 export const UserMenu = ({ className }: UserMenuProps) => {
-  const { user, isLoading, isOpen, isLoggingOut, displayName, toggle, handleLogout } = useUserMenu()
+  const { user, isLoading, isOpen, displayName, toggle, handleLogout } = useUserMenu()
 
-  if (!isLoading && !user) {
+  if (!authRepository.hasTokens() || (!isLoading && !user)) {
     return (
       <div className={`${styles.wrapper}${className ? ` ${className}` : ""}`}>
         <Link to={routes.login} className={styles.loginButton}>
@@ -22,11 +23,21 @@ export const UserMenu = ({ className }: UserMenuProps) => {
     <div className={`${styles.wrapper}${className ? ` ${className}` : ""}`}>
       <p className={styles.greeting}>Привет, {displayName}</p>
 
-      <div className={styles.avatar} onClick={toggle} role="button" tabIndex={0}>
-        <User2 size={30} />
+      <div className={styles.menuAnchor}>
+        <div
+          className={styles.avatar}
+          onClick={toggle}
+          onKeyDown={(e) => e.key === "Enter" && toggle()}
+          role="button"
+          tabIndex={0}
+          aria-expanded={isOpen}
+          aria-haspopup="true"
+        >
+          <User2 size={30} />
+        </div>
 
         {isOpen && (
-          <div className={styles.dropdown}>
+          <div className={styles.dropdown} role="menu">
             <div className={styles.dropdownHeader}>
               <div className={styles.avatarLarge}>
                 <User2 size={40} />
@@ -39,12 +50,12 @@ export const UserMenu = ({ className }: UserMenuProps) => {
 
             <div className={styles.divider} />
 
-            <Link to={routes.profile} className={styles.link}>
+            <Link to={routes.profile} className={styles.link} role="menuitem">
               <User size={18} />
               <span>Профиль</span>
             </Link>
 
-            <Link to={routes.profile} className={styles.link}>
+            <Link to={routes.profile} className={styles.link} role="menuitem">
               <Settings size={18} />
               <span>Настройки</span>
             </Link>
@@ -52,12 +63,17 @@ export const UserMenu = ({ className }: UserMenuProps) => {
             <div className={styles.divider} />
 
             <button
+              type="button"
               className={styles.logoutButton}
+              role="menuitem"
+              onPointerDown={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+              }}
               onClick={handleLogout}
-              disabled={isLoggingOut}
             >
               <LogOut size={18} />
-              <span>{isLoggingOut ? "Выходим..." : "Выйти"}</span>
+              <span>Выйти</span>
             </button>
           </div>
         )}

@@ -6,6 +6,9 @@ import tsconfigPaths from "vite-tsconfig-paths"
 export default defineConfig({
   plugins: [tsconfigPaths(), react()],
   server: {
+    host: "127.0.0.1",
+    port: 5173,
+    strictPort: false,
     proxy: {
       "/api": {
         target: "http://127.0.0.1:8001",

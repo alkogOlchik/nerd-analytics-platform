@@ -1,31 +1,34 @@
-import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useState, type MouseEvent } from "react"
+import { useQueryClient } from "@tanstack/react-query"
+import { authRepository } from "data/repositories/Auth"
+import { clearAuthSession } from "domain/Auth/clearAuthSession"
 import { useMe } from "domain/Auth/useMe"
-import { useLogout } from "domain/Auth/useLogout"
 import { routes } from "shared/utils/routes"
 import { getDisplayName } from "modules/UserMenu/utils"
 
 export const useUserMenu = () => {
   const [isOpen, setIsOpen] = useState(false)
+  const queryClient = useQueryClient()
 
+  const hasTokens = authRepository.hasTokens()
   const { data: user, isLoading } = useMe()
-  const { mutateAsync: logout, isPending: isLoggingOut } = useLogout()
-  const navigate = useNavigate()
 
   const displayName = getDisplayName(user)
 
   const toggle = () => setIsOpen((v) => !v)
 
-  const handleLogout = async () => {
-    await logout()
-    navigate(routes.login, { replace: true })
+  const handleLogout = async (e: MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsOpen(false)
+    await clearAuthSession(queryClient)
+    window.location.assign(routes.login)
   }
 
   return {
-    user,
-    isLoading,
+    user: hasTokens ? user : undefined,
+    isLoading: hasTokens && isLoading,
     isOpen,
-    isLoggingOut,
     displayName,
     toggle,
     handleLogout,

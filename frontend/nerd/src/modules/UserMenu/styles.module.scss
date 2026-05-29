@@ -12,8 +12,14 @@
   color: var(--color-text-white);
 }
 
-.avatar {
+/* Контейнер для аватара и dropdown — не 42×42, иначе клики не доходят до «Выйти» */
+.menuAnchor {
   position: relative;
+  z-index: 1000;
+  flex-shrink: 0;
+}
+
+.avatar {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -37,16 +43,16 @@
 
 .dropdown {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 12px);
   right: 0;
-  margin-top: 12px;
   width: 300px;
   background: var(--color-bg-secondary);
   border: 1px solid var(--color-purple-glow);
   border-radius: 8px;
   box-shadow: var(--shadow-sidebar);
   padding: 16px;
-  z-index: 1000;
+  z-index: 1001;
+  pointer-events: auto;
 }
 
 .dropdownHeader {

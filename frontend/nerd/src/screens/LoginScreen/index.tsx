@@ -1,5 +1,6 @@
 import { type FormEvent, useState } from "react"
 import { Link, Navigate, useNavigate } from "react-router-dom"
+import { authRepository } from "data/repositories/Auth"
 import { useLogin } from "domain/Auth/useLogin"
 import { useMe } from "domain/Auth/useMe"
 import { routes } from "shared/utils/routes"
@@ -21,7 +22,7 @@ export const LoginScreen = () => {
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
 
-  if (user) return <Navigate to={routes.main} replace />
+  if (user && authRepository.hasTokens()) return <Navigate to={routes.main} replace />
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()

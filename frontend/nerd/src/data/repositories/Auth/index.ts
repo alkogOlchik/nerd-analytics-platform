@@ -50,8 +50,8 @@ export const authRepository = {
 
   logout: async (): Promise<void> => {
     const rt = getRefreshToken()
-    if (rt) await authSource.logout(rt)
     clearTokens()
+    if (rt) await authSource.logout(rt)
   },
 
   me: async (): Promise<User> => {
