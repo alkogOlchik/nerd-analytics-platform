@@ -43,7 +43,7 @@ apiClient.interceptors.response.use(
   async (error: unknown) => {
     const axiosError = error as {
       response?: { status?: number }
-      config?: { _retry?: boolean; headers?: Record<string, string> }
+      config?: { _retry?: boolean; headers?: Record<string, string>; url?: string }
     }
 
     if (axiosError.response?.status !== 401 || axiosError.config?._retry) {

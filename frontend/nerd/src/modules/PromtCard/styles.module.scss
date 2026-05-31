@@ -11,15 +11,35 @@
 .textarea {
   width: 100%;
   min-height: 60px;
+  max-height: 200px;
   resize: none;
   background: transparent;
   color: var(--color-text-white);
   outline: none;
   border: none;
   font-size: 16px;
+  overflow-y: auto;
 
   &::placeholder {
     color: var(--color-text-tertiary);
+  }
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    transition: background 0.2s ease;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.4);
   }
 }
 
