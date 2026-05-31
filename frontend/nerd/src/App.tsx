@@ -28,10 +28,12 @@ const appRoutes: RouteObject[] = [
     path: routes.assistant,
     element: <AssistantPage />,
   },
+  { path: routes.tickets, 
+    element: <TicketsPage /> 
+  },
   {
     element: <PrivateRoute />,
     children: [
-      { path: routes.tickets, element: <TicketsPage /> },
       { path: routes.favorites, element: <FavoritesPage /> },
       { path: routes.notifications, element: <NotificationsPage /> },
       { path: routes.profile, element: <ProfilePage /> },
