@@ -31,11 +31,14 @@ const appRoutes: RouteObject[] = [
   { path: routes.tickets, 
     element: <TicketsPage /> 
   },
+  { 
+    path: routes.notifications,
+    element: <NotificationsPage /> 
+  },
   {
     element: <PrivateRoute />,
     children: [
       { path: routes.favorites, element: <FavoritesPage /> },
-      { path: routes.notifications, element: <NotificationsPage /> },
       { path: routes.profile, element: <ProfilePage /> },
     ],
   },

@@ -1,2 +1,3 @@
 export * from "./Auth"
 export * from "./Assistant"
+export * from "./Notifications"
