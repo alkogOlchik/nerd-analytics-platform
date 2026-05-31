@@ -2,6 +2,7 @@ import { type FormEvent, useState } from "react"
 import { Link, Navigate, useNavigate } from "react-router-dom"
 import { ChevronDown } from "lucide-react"
 import { useRegister } from "domain/Auth/useRegister"
+import { authRepository } from "data/repositories/Auth"
 import { useMe } from "domain/Auth/useMe"
 import { routes } from "shared/utils/routes"
 import styles from "./styles.module.scss"
@@ -28,7 +29,7 @@ export const RegisterScreen = () => {
   const [showOptional, setShowOptional] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  if (user) return <Navigate to={routes.main} replace />
+  if (user && authRepository.hasTokens()) return <Navigate to={routes.main} replace />
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()

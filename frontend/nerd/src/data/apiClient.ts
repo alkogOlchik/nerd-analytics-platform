@@ -18,6 +18,12 @@ const clearTokens = () => {
   localStorage.removeItem("refresh_token")
 }
 
+/** 401 на этих ручках — ожидаемая ошибка, не пытаемся refresh */
+const AUTH_NO_REFRESH_PATHS = ["/auth/login", "/auth/register", "/auth/refresh", "/auth/logout"]
+
+const shouldSkipTokenRefresh = (url?: string) =>
+  AUTH_NO_REFRESH_PATHS.some((path) => (url ?? "").includes(path))
+
 apiClient.interceptors.request.use((config) => {
   const token = getAccessToken()
   if (token) config.headers.Authorization = `Bearer ${token}`
@@ -37,10 +43,15 @@ apiClient.interceptors.response.use(
   async (error: unknown) => {
     const axiosError = error as {
       response?: { status?: number }
-      config?: { _retry?: boolean; headers?: Record<string, string> }
+      config?: { _retry?: boolean; headers?: Record<string, string>; url?: string }
     }
 
     if (axiosError.response?.status !== 401 || axiosError.config?._retry) {
+      return Promise.reject(error)
+    }
+
+    const requestUrl = axiosError.config?.url
+    if (shouldSkipTokenRefresh(requestUrl) || !getRefreshToken()) {
       return Promise.reject(error)
     }
 
@@ -71,7 +82,10 @@ apiClient.interceptors.response.use(
     } catch (refreshError) {
       processQueue(refreshError, null)
       clearTokens()
-      window.location.href = "/login"
+      const path = window.location.pathname
+      if (!path.startsWith("/login") && !path.startsWith("/register")) {
+        window.location.href = "/login"
+      }
       return Promise.reject(refreshError)
     } finally {
       isRefreshing = false

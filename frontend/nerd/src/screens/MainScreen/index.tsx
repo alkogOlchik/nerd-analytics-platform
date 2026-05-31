@@ -1,12 +1,21 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { AlertTriangle, Lightbulb, ClipboardList } from "lucide-react"
 import styles from "./styles.module.scss"
 import { Sidebar, PromptCard, QuickActionCard, FAQItem, UserMenu } from "modules"
 import clsx from "clsx"
 import { HelpCard } from "shared/ui/HelpCard"
+import { routes } from "shared/utils/routes"
 
 export const MainScreen = () => {
   const [promptValue, setPromptValue] = useState("")
+  const navigate = useNavigate()
+
+  const handlePromptSubmit = () => {
+    if (promptValue.trim()) {
+      navigate(routes.assistant, { state: { initialMessage: promptValue } })
+    }
+  }
 
   return (
     <div className={styles.page}>
@@ -15,7 +24,9 @@ export const MainScreen = () => {
       <Sidebar onSelect={(id) => console.log(id)} />
 
       <main className={styles.main}>
-        <UserMenu />
+        <div className={styles.mainHeader}>
+          <UserMenu />
+        </div>
 
         <section className={clsx(styles.helloSection, styles.section)}>
           <div className={styles.helloLeftContent}>
@@ -29,7 +40,7 @@ export const MainScreen = () => {
             <PromptCard
               value={promptValue}
               onChange={setPromptValue}
-              onSubmit={() => console.log("submit", promptValue)}
+              onSubmit={handlePromptSubmit}
             />
           </div>
 

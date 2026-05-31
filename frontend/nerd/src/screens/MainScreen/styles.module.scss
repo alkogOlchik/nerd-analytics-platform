@@ -11,6 +11,13 @@
   overflow-x: clip;
 }
 
+/* Меню пользователя не обрезается overflow главной */
+.mainHeader {
+  position: relative;
+  z-index: 100;
+  overflow: visible;
+}
+
 .hero {
   margin-bottom: 32px;
 }

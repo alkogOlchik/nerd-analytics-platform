@@ -1,14 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { authRepository } from "data/repositories/Auth"
-import { ME_QUERY_KEY } from "domain/Auth/useMe"
+import { clearAuthSession } from "domain/Auth/clearAuthSession"
 
 export const useLogout = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: authRepository.logout,
-    onSuccess: () => {
-      queryClient.removeQueries({ queryKey: ME_QUERY_KEY })
-    },
+    mutationFn: () => clearAuthSession(queryClient),
   })
 }

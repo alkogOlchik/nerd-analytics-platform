@@ -9,7 +9,12 @@ export const authSource = {
     apiClient.post<UserDto>("/auth/register", req).then((r) => r.data),
 
   logout: (refreshToken: string) =>
-    apiClient.post<void>("/auth/logout", { refresh_token: refreshToken }).then(() => undefined),
+    apiClient
+      .post("/auth/logout", { refresh_token: refreshToken }, {
+        // 204 No Content — нормальный ответ
+        validateStatus: (status) => status === 204 || (status >= 200 && status < 300),
+      })
+      .then(() => undefined),
 
   refresh: (refreshToken: string) =>
     apiClient.post<AuthTokens>("/auth/refresh", { refresh_token: refreshToken }).then((r) => r.data),
