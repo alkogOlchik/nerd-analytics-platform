@@ -1,0 +1,17 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+.git/
+.gitignore
+node_modules/
+frontend/nerd/dist/
+frontend/nerd/node_modules/
+ml/chroma_db/
+classic_models/
+analytics/
+docs/
+*.md
+.claude/
