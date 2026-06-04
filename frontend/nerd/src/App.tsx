@@ -3,9 +3,9 @@ import { routes } from "./shared/utils/routes"
 import { MainPage } from "./pages/MainPage"
 import { AssistantPage } from "./pages/AssistantPage"
 import { TicketsPage } from "./pages/TicketsPage"
-import { FavoritesPage } from "./pages/FavoritesPage"
 import { NotificationsPage } from "./pages/NotificationsPage"
 import { ProfilePage } from "./pages/ProfilePage"
+import { SettingsPage } from "./pages/SettingsPage"
 import { NotFoundPage } from "./pages/NotFoundPage"
 import { LoginPage } from "./pages/LoginPage"
 import { RegisterPage } from "./pages/RegisterPage"
@@ -46,8 +46,8 @@ const appRoutes: RouteObject[] = [
           { path: routes.analytics, element: <AnalyticsPage /> },
         ],
       },
-      { path: routes.favorites, element: <FavoritesPage /> },
       { path: routes.profile, element: <ProfilePage /> },
+      { path: routes.settings, element: <SettingsPage /> },
     ],
   },
   {

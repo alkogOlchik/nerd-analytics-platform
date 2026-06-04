@@ -2,18 +2,17 @@ import { useState, type MouseEvent } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { authRepository } from "data/repositories/Auth"
 import { clearAuthSession } from "domain/Auth/clearAuthSession"
-import { useMe } from "domain/Auth/useMe"
+import { useProfile } from "domain/Profile"
 import { routes } from "shared/utils/routes"
-import { getDisplayName } from "modules/UserMenu/utils"
 
 export const useUserMenu = () => {
   const [isOpen, setIsOpen] = useState(false)
   const queryClient = useQueryClient()
 
   const hasTokens = authRepository.hasTokens()
-  const { data: user, isLoading } = useMe()
+  const { data: profile, isLoading } = useProfile()
 
-  const displayName = getDisplayName(user)
+  const displayName = profile?.fullName ?? profile?.authUsername ?? ""
 
   const toggle = () => setIsOpen((v) => !v)
 
@@ -26,7 +25,7 @@ export const useUserMenu = () => {
   }
 
   return {
-    user: hasTokens ? user : undefined,
+    profile: hasTokens ? profile : undefined,
     isLoading: hasTokens && isLoading,
     isOpen,
     displayName,
