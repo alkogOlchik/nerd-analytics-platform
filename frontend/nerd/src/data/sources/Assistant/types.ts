@@ -6,16 +6,21 @@ export interface ChatSessionDto {
   last_message?: string
 }
 
+// Matches ChatMessageResponse from POST /ai/chat and GET /ai/chat/history
 export interface MessageDto {
   id: string
-  session_id: string
-  role: "user" | "assistant"
-  content: string
+  chat_id: string
+  role: "client" | "ai" | "admin"
+  message: string
   created_at: string
+  ticket_id?: string | null
+  product?: string | null
+  category?: string | null
+  resolved_by_ai?: boolean
 }
 
 export interface SendMessageRequest {
-  session_id: string
+  chat_id: string
   content: string
 }
 

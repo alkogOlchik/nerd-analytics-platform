@@ -1,8 +1,4 @@
-import {
-  MOCK_SESSIONS,
-  MOCK_MESSAGES,
-  MOCK_ASSISTANT_REPLIES,
-} from "./constants"
+import { apiClient } from "data/apiClient"
 import type {
   ChatSessionDto,
   MessageDto,
@@ -12,107 +8,81 @@ import type {
   CreateSessionResponse,
 } from "./types"
 
-const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
+const SESSIONS_KEY = "nerd_chat_sessions"
 
-const sessionStore: ChatSessionDto[] = [...MOCK_SESSIONS]
-const messageStore: Record<string, MessageDto[]> = Object.fromEntries(
-  Object.entries(MOCK_MESSAGES).map(([k, v]) => [k, [...v]])
-)
+const loadSessions = (): ChatSessionDto[] => {
+  try {
+    return JSON.parse(localStorage.getItem(SESSIONS_KEY) ?? "[]") as ChatSessionDto[]
+  } catch {
+    return []
+  }
+}
 
-const randomReply = (): string =>
-  MOCK_ASSISTANT_REPLIES[Math.floor(Math.random() * MOCK_ASSISTANT_REPLIES.length)]
+const saveSessions = (sessions: ChatSessionDto[]) => {
+  localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions))
+}
+
+interface ApiChatResponse {
+  chat_id: string
+  user_message: MessageDto
+  assistant_message: MessageDto
+  ml_response: Record<string, unknown>
+}
 
 export const assistantSource = {
   getSessions: async (): Promise<ChatSessionDto[]> => {
-    await delay(300)
-    return [...sessionStore].sort(
-      (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+    return [...loadSessions()].sort(
+      (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
     )
   },
 
-  getMessages: async (sessionId: string): Promise<MessageDto[]> => {
-    await delay(200)
-    return messageStore[sessionId] ?? []
+  getMessages: async (chatId: string): Promise<MessageDto[]> => {
+    const { data } = await apiClient.get<MessageDto[]>("/ai/chat/history", {
+      params: { chat_id: chatId },
+    })
+    return data
   },
 
   sendMessage: async (req: SendMessageRequest): Promise<SendMessageResponse> => {
-    await delay(500)
-    const now = new Date().toISOString()
+    const { data } = await apiClient.post<ApiChatResponse>("/ai/chat", {
+      message: req.content,
+      model: "gemma4:e2b",
+      chat_id: req.chat_id,
+    })
 
-    const userMessage: MessageDto = {
-      id: `msg-${Date.now()}-user`,
-      session_id: req.session_id,
-      role: "user",
-      content: req.content,
-      created_at: now,
-    }
-
-    await delay(700)
-    const assistantReplyTime = new Date().toISOString()
-    const assistantMessage: MessageDto = {
-      id: `msg-${Date.now()}-assistant`,
-      session_id: req.session_id,
-      role: "assistant",
-      content: randomReply(),
-      created_at: assistantReplyTime,
-    }
-
-    if (!messageStore[req.session_id]) {
-      messageStore[req.session_id] = []
-    }
-    messageStore[req.session_id].push(userMessage, assistantMessage)
-
-    const session = sessionStore.find((s) => s.id === req.session_id)
+    const sessions = loadSessions()
+    const session = sessions.find((s) => s.id === req.chat_id)
     if (session) {
-      session.last_message = assistantMessage.content
-      session.updated_at = assistantReplyTime
+      session.last_message = data.assistant_message.message
+      session.updated_at = data.assistant_message.created_at
+      saveSessions(sessions)
     }
 
-    return { user_message: userMessage, assistant_message: assistantMessage }
+    return { user_message: data.user_message, assistant_message: data.assistant_message }
   },
 
   createSession: async (req: CreateSessionRequest): Promise<CreateSessionResponse> => {
-    await delay(300)
-    const now = new Date().toISOString()
-    const sessionId = `session-${Date.now()}`
+    const { data } = await apiClient.post<ApiChatResponse>("/ai/chat", {
+      message: req.first_message,
+      model: "gemma4:e2b",
+    })
 
     const title =
-      req.first_message.length > 40
-        ? req.first_message.slice(0, 40) + "…"
-        : req.first_message
+      req.first_message.length > 40 ? req.first_message.slice(0, 40) + "…" : req.first_message
 
     const session: ChatSessionDto = {
-      id: sessionId,
+      id: data.chat_id,
       title,
-      created_at: now,
-      updated_at: now,
+      created_at: data.user_message.created_at,
+      updated_at: data.assistant_message.created_at,
+      last_message: data.assistant_message.message,
     }
 
-    const userMessage: MessageDto = {
-      id: `msg-${Date.now()}-user`,
-      session_id: sessionId,
-      role: "user",
-      content: req.first_message,
-      created_at: now,
-    }
+    const sessions = loadSessions()
+    sessions.unshift(session)
+    saveSessions(sessions)
 
-    await delay(700)
-    const replyTime = new Date().toISOString()
-    const assistantMessage: MessageDto = {
-      id: `msg-${Date.now()}-assistant`,
-      session_id: sessionId,
-      role: "assistant",
-      content: randomReply(),
-      created_at: replyTime,
-    }
-
-    session.last_message = assistantMessage.content
-    session.updated_at = replyTime
-
-    sessionStore.unshift(session)
-    messageStore[sessionId] = [userMessage, assistantMessage]
-
-    return { session, messages: [userMessage, assistantMessage] }
+    return { session, messages: [data.user_message, data.assistant_message] }
   },
 }
 
