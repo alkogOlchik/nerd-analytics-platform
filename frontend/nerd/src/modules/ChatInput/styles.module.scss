@@ -81,8 +81,13 @@
   flex-shrink: 0;
   transition: color 0.15s;
 
-  &:hover {
+  &:hover:not(:disabled) {
     color: var(--color-text-white, #fff);
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
   }
 }
 
@@ -114,6 +119,61 @@
 
 .spinner {
   animation: spin 0.8s linear infinite;
+}
+
+.hiddenFileInput {
+  display: none;
+}
+
+.attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 4px 8px;
+}
+
+.fileChip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: rgba(124, 92, 255, 0.15);
+  border: 1px solid rgba(124, 92, 255, 0.3);
+  border-radius: 8px;
+  max-width: 220px;
+}
+
+.fileName {
+  font-size: 12px;
+  color: var(--color-text-white, #fff);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.removeFile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary, #888);
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: color 0.15s;
+
+  &:hover {
+    color: var(--color-text-white, #fff);
+  }
+}
+
+.iconActionRecording {
+  color: #ff4d4d;
+
+  &:hover {
+    color: #ff6b6b;
+  }
 }
 
 .hint {

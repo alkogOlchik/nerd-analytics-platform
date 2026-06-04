@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react"
 import { useLocation } from "react-router-dom"
-import { Bot } from "lucide-react"
+import { Bot, User2 } from "lucide-react"
 import styles from "./AssistantScreen.module.scss"
 import { Sidebar, UserMenu } from "modules"
 import { ChatHistory } from "modules/ChatHistory"
@@ -13,15 +13,18 @@ import { useCreateSession } from "domain/Assistant/useCreateSession"
 import type { CreateSessionResult } from "data/repositories/Assistant"
 
 export const AssistantScreen = () => {
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
+  // undefined = initial (fall back to sessions[0]), null = explicitly "new chat", string = selected session
+  const [activeSessionId, setActiveSessionId] = useState<string | null | undefined>(undefined)
   const [inputValue, setInputValue] = useState("")
+  const [pendingFirstMessage, setPendingFirstMessage] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const location = useLocation()
   const autoSentRef = useRef(false)
 
   const { data: sessions = [], isLoading: sessionsLoading } = useChatSessions()
 
-  const effectiveSessionId = activeSessionId ?? sessions[0]?.id ?? null
+  const effectiveSessionId =
+    activeSessionId !== undefined ? activeSessionId : (sessions[0]?.id ?? null)
 
   const { data: messages = [], isLoading: messagesLoading } = useMessages(effectiveSessionId)
   const sendMessage = useSendMessage(effectiveSessionId)
@@ -29,6 +32,7 @@ export const AssistantScreen = () => {
   const handleSessionCreated = (result: CreateSessionResult) => {
     setActiveSessionId(result.session.id)
     setInputValue("")
+    setPendingFirstMessage(null)
   }
 
   const createSession = useCreateSession(handleSessionCreated)
@@ -39,6 +43,7 @@ export const AssistantScreen = () => {
     const initialMsg = (location.state as { initialMessage?: string })?.initialMessage
     if (initialMsg?.trim()) {
       autoSentRef.current = true
+      setPendingFirstMessage(initialMsg)
       createSession.mutate(initialMsg)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -46,13 +51,15 @@ export const AssistantScreen = () => {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
+  }, [messages, pendingFirstMessage])
 
   const handleSend = () => {
     const text = inputValue.trim()
     if (!text) return
 
     if (!effectiveSessionId) {
+      setPendingFirstMessage(text)
+      setInputValue("")
       createSession.mutate(text)
     } else {
       sendMessage.mutate(text)
@@ -63,11 +70,17 @@ export const AssistantScreen = () => {
   const handleNewChat = () => {
     setActiveSessionId(null)
     setInputValue("")
+    setPendingFirstMessage(null)
   }
 
   const isSending = sendMessage.isPending || createSession.isPending
 
   const activeSession = sessions.find((s) => s.id === effectiveSessionId)
+
+  // Deduplicate messages by id as a safety net
+  const uniqueMessages = messages.filter(
+    (msg, idx, arr) => arr.findIndex((m) => m.id === msg.id) === idx,
+  )
 
   return (
     <div className={styles.page}>
@@ -93,7 +106,7 @@ export const AssistantScreen = () => {
         </div>
 
         <div className={styles.messagesArea}>
-          {!effectiveSessionId && !isSending && (
+          {!effectiveSessionId && !isSending && !pendingFirstMessage && (
             <div className={styles.emptyState}>
               <div className={styles.emptyIcon}>
                 <Bot size={40} />
@@ -114,9 +127,20 @@ export const AssistantScreen = () => {
           )}
 
           {!messagesLoading &&
-            messages.map((message) => (
+            uniqueMessages.map((message) => (
               <ChatMessage key={message.id} message={message} />
             ))}
+
+          {pendingFirstMessage && createSession.isPending && (
+            <div className={styles.pendingUserMessage}>
+              <div className={styles.pendingBubble}>
+                <p className={styles.pendingText}>{pendingFirstMessage}</p>
+              </div>
+              <div className={styles.pendingAvatar}>
+                <User2 size={18} />
+              </div>
+            </div>
+          )}
 
           {isSending && (
             <div className={styles.typingIndicator}>
