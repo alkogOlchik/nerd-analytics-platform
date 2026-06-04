@@ -23,7 +23,7 @@
   gap: 8px;
 }
 
-.categoryBadge {
+.priorityBadge {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -34,22 +34,22 @@
   letter-spacing: 0.3px;
 }
 
-.categoryComplaint {
+.priorityHigh {
   background: rgba(239, 68, 68, 0.15);
   color: #f87171;
   border: 1px solid rgba(239, 68, 68, 0.25);
 }
 
-.categorySupport {
+.priorityMedium {
+  background: rgba(251, 191, 36, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.2);
+}
+
+.priorityLow {
   background: rgba(99, 102, 241, 0.15);
   color: #818cf8;
   border: 1px solid rgba(99, 102, 241, 0.25);
-}
-
-.categoryReview {
-  background: rgba(234, 179, 8, 0.15);
-  color: #fbbf24;
-  border: 1px solid rgba(234, 179, 8, 0.25);
 }
 
 .statusBadge {
@@ -75,6 +75,12 @@
   background: rgba(255, 255, 255, 0.06);
   color: var(--color-text-secondary, #888);
   border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.statusReopened {
+  background: rgba(251, 146, 60, 0.12);
+  color: #fb923c;
+  border: 1px solid rgba(251, 146, 60, 0.2);
 }
 
 .title {
