@@ -10,6 +10,7 @@
     inset: 0;
     z-index: 0;
     overflow: hidden;
+    pointer-events: none;
     border-radius: var(--radius-md);
     opacity: 0;
     transition: opacity 0.3s ease;

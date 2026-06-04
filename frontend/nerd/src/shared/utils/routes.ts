@@ -8,4 +8,7 @@ export const routes = {
     profile: "/profile",
     settings: "/settings",
     analytics: "/analytics",
+    createTicket: "/create-ticket",
+    feedback: "/feedback",
+    ticketStatus: "/ticket-status",
 } as const

@@ -33,23 +33,40 @@
 
 .content {
   flex: 1;
-  padding: 40px;
-  overflow-y: auto;
+  padding: 32px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placeholder {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
+  gap: 14px;
+  text-align: center;
+}
 
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
+.placeholderIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(124, 92, 255, 0.1);
+  color: rgba(124, 92, 255, 0.6);
+}
 
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
+.placeholderTitle {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--color-text-white, #fff);
+  margin: 0;
+}
 
-  &::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 4px;
-  }
+.placeholderSubtitle {
+  font-size: 15px;
+  color: var(--color-text-secondary, #888);
+  margin: 0;
 }

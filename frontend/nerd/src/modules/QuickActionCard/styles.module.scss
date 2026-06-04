@@ -1,14 +1,18 @@
+.wrapper {
+  cursor: pointer;
+  transition: transform 0.3s ease;
+
+  &:hover {
+    transform: scale(1.05);
+  }
+}
+
 .card {
   display: flex;
   align-items: center;
   gap: 20px;
   padding: 24px;
-  cursor: pointer;
   transition: all 0.3s ease;
-
-  &:hover {
-    transform: scale(1.05);
-  }
 }
 
 .iconWrapper {

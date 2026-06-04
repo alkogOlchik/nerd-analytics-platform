@@ -12,7 +12,7 @@ export const QuickActionCard = ({
   onClick,
 }: QuickActionCardProps) => {
   return (
-    <LiquidWrapper onClick={onClick} alwaysActive>
+    <LiquidWrapper onClick={onClick} alwaysActive className={styles.wrapper}>
       <BaseCard className={styles.card}>
         <div className={styles.iconWrapper}>
           <Icon size={28} />
