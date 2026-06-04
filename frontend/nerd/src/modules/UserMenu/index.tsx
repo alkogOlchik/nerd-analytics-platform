@@ -21,7 +21,9 @@ export const UserMenu = ({ className }: UserMenuProps) => {
 
   return (
     <div className={`${styles.wrapper}${className ? ` ${className}` : ""}`}>
-      <p className={styles.greeting}>Привет, {displayName}</p>
+      <div className={styles.greetingWrapper}>
+        <p className={styles.greeting}>Привет, {displayName}</p>
+      </div>
 
       <div className={styles.menuAnchor}>
         <div
