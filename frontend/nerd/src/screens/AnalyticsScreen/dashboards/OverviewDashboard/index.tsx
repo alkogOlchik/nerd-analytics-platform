@@ -66,7 +66,7 @@ export const OverviewDashboard = () => {
                   cx="50%"
                   cy="50%"
                   outerRadius={90}
-                  onClick={(entry) => toggleStatus(entry.key)}
+                  onClick={(entry) => toggleStatus(String(entry.key ?? ""))}
                 >
                   {data?.byStatus.map((entry, i) => (
                     <Cell
@@ -83,7 +83,7 @@ export const OverviewDashboard = () => {
                 />
                 <Legend
                   formatter={(value) => <span style={{ color: "#aaa", fontSize: 12 }}>{value}</span>}
-                  onClick={(e) => toggleStatus(e.value)}
+                  onClick={(e) => e.value && toggleStatus(e.value)}
                 />
               </PieChart>
             </ResponsiveContainer>

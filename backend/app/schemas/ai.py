@@ -19,6 +19,16 @@ class ClassifyReviewRequest(BaseModel):
     model: str = "gemma4:e2b"
 
 
+class ChatFileResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    filename: str
+    content_type: str
+    size_bytes: int
+    created_at: datetime
+
+
 class ChatRequest(BaseModel):
     """Первое сообщение: только message (+ model). chat_id создаётся в ответе."""
 
@@ -43,6 +53,7 @@ class ChatRequest(BaseModel):
         default=None,
         description="Опционально: привязка к тикету. Первый раз не указывать.",
     )
+    file_ids: list[uuid.UUID] | None = None
     product: str | None = None
     category: str | None = None
     resolved_by_ai: bool = False

@@ -10,10 +10,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.models.chat import ChatHistory
+from backend.app.models.chat_file import ChatFile
 from backend.app.models.enums import ChatRole, ReviewCategory, Sentiment, TicketCategory
 from backend.app.models.review import Review
 from backend.app.models.ticket import Ticket
 from backend.app.schemas.ai import ChatRequest
+from backend.app.services import file_parser, s3_service
 from backend.app.services.ml_client import ml_client
 from backend.app.utils.keywords import join_keywords
 
@@ -173,6 +175,23 @@ async def chat(
     product = data.product or (ticket.product if ticket else None)
     category = data.category or (ticket.final_category or ticket.ai_suggested_category if ticket else None)
 
+    context_parts: list[str] = []
+    if data.file_ids:
+        for file_id in data.file_ids:
+            cf = await db.get(ChatFile, file_id)
+            if cf is None:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"File {file_id} not found")
+            if cf.client_id != client_id:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+            raw = await s3_service.download_file(cf.s3_key)
+            try:
+                text = file_parser.parse_to_text(raw, cf.filename)
+            except ValueError as e:
+                raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
+            context_parts.append(f"=== {cf.filename} ===\n{text}")
+
+    query = "\n\n".join(context_parts + [data.message]) if context_parts else data.message
+
     user_msg = ChatHistory(
         chat_id=chat_id,
         client_id=client_id,
@@ -186,7 +205,7 @@ async def chat(
     db.add(user_msg)
     await db.flush()
 
-    ml_result = await ml_client.query(data.message, model=data.model)
+    ml_result = await ml_client.query(query, model=data.model)
 
     assistant_msg = ChatHistory(
         chat_id=chat_id,

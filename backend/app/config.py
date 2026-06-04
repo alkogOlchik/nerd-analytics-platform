@@ -24,6 +24,11 @@ class Settings(BaseSettings):
     GITHUB_CLIENT_SECRET: str = ""
     OAUTH_REDIRECT_URI: str = "http://127.0.0.1:8001/auth/oauth/callback"
 
+    S3_ENDPOINT_URL: str = "http://localhost:9000"
+    S3_ACCESS_KEY: str = "minioadmin"
+    S3_SECRET_KEY: str = "minioadmin"
+    S3_BUCKET_NAME: str = "nerd-files"
+
     @property
     def sync_database_url(self) -> str:
         return self.DATABASE_URL.replace("+asyncpg", "")
