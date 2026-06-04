@@ -7,4 +7,5 @@ export const routes = {
     favorites: "/favorites",
     notifications: "/notifications",
     profile: "/profile",
+    analytics: "/analytics",
 } as const

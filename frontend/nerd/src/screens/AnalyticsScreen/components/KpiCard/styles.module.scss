@@ -1,0 +1,44 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px 24px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  min-width: 160px;
+  flex: 1;
+}
+
+.label {
+  font-size: 13px;
+  color: var(--color-text-secondary, #888);
+  font-weight: 500;
+}
+
+.valueRow {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.value {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--color-text-white, #fff);
+  line-height: 1;
+}
+
+.unit {
+  font-size: 16px;
+  color: var(--color-text-secondary, #888);
+  font-weight: 500;
+}
+
+.success .value { color: #4ade80; }
+.warning .value { color: #facc15; }
+.danger .value  { color: #f87171; }
+
+.placeholder .value {
+  color: rgba(255, 255, 255, 0.2);
+}
