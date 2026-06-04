@@ -55,12 +55,14 @@ const appRoutes: RouteObject[] = [
   {
     element: <PrivateRoute />,
     children: [
-      {
-        element: <EmployeeRoute />,
-        children: [
-          { path: routes.analytics, element: <AnalyticsPage /> },
-        ],
-      },
+      // TODO: вернуть EmployeeRoute когда роль admin/employee будет стабильно приходить с бека
+      // {
+      //   element: <EmployeeRoute />,
+      //   children: [
+      //     { path: routes.analytics, element: <AnalyticsPage /> },
+      //   ],
+      // },
+      { path: routes.analytics, element: <AnalyticsPage /> },
       { path: routes.profile, element: <ProfilePage /> },
       { path: routes.settings, element: <SettingsPage /> },
     ],
