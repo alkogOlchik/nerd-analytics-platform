@@ -7,9 +7,9 @@ import type { UserMenuProps } from "./types"
 import styles from "./styles.module.scss"
 
 export const UserMenu = ({ className }: UserMenuProps) => {
-  const { user, isLoading, isOpen, displayName, toggle, handleLogout } = useUserMenu()
+  const { profile, isLoading, isOpen, displayName, toggle, handleLogout } = useUserMenu()
 
-  if (!authRepository.hasTokens() || (!isLoading && !user)) {
+  if (!authRepository.hasTokens() || (!isLoading && !profile)) {
     return (
       <div className={`${styles.wrapper}${className ? ` ${className}` : ""}`}>
         <Link to={routes.login} className={styles.loginButton}>
@@ -43,8 +43,8 @@ export const UserMenu = ({ className }: UserMenuProps) => {
                 <User2 size={40} />
               </div>
               <div>
-                <p className={styles.fullName}>{user?.fullName ?? user?.username}</p>
-                {user?.email && <p className={styles.email}>{user.email}</p>}
+                <p className={styles.fullName}>{profile?.fullName ?? profile?.authUsername}</p>
+                {profile?.email && <p className={styles.email}>{profile.email}</p>}
               </div>
             </div>
 
@@ -55,7 +55,7 @@ export const UserMenu = ({ className }: UserMenuProps) => {
               <span>Профиль</span>
             </Link>
 
-            <Link to={routes.profile} className={styles.link} role="menuitem">
+            <Link to={routes.settings} className={styles.link} role="menuitem">
               <Settings size={18} />
               <span>Настройки</span>
             </Link>

@@ -34,7 +34,6 @@ export const MainScreen = () => {
               <h1 className={styles.title}>
                 Привет! Я ваш <span className={styles.title_decorated}>AI-помощник</span> 👋
               </h1>
-              <p className={styles.subtitle}>Опишите проблему, и я помогу найти решение.</p>
             </div>
 
             <PromptCard
@@ -57,16 +56,19 @@ export const MainScreen = () => {
               title="Сообщить о проблеме"
               description="Создать новое обращение"
               icon={AlertTriangle}
+              onClick={() => navigate(routes.createTicket)}
             />
             <QuickActionCard
-              title="Предложить улучшение"
-              description="Отправить идею"
+              title="Написать отзыв"
+              description="Поделитесь своим мнением"
               icon={Lightbulb}
+              onClick={() => navigate(routes.feedback)}
             />
             <QuickActionCard
               title="Проверить статус"
               description="Мои обращения"
               icon={ClipboardList}
+              onClick={() => navigate(routes.ticketStatus)}
             />
           </div>
         </section>

@@ -1,4 +1,4 @@
-import { Home, Bot, Bell, Star, User, FileText, BarChart2 } from "lucide-react"
+import { Home, Bot, Bell, FileText, BarChart2 } from "lucide-react"
 import type { SidebarItem } from "./types"
 import { routes } from "shared/utils/routes"
 
@@ -29,22 +29,9 @@ export const NAVIGATION_ITEMS: SidebarItem[] = [
     path: routes.analytics,
   },
   {
-    id: "favorites",
-    label: "Избранные продукты",
-    icon: Star,
-    path: routes.favorites,
-  },
-  {
     id: "notifications",
     label: "Уведомления",
     icon: Bell,
     path: routes.notifications,
-    notifications: 3,
-  },
-  {
-    id: "profile",
-    label: "Профиль и настройки",
-    icon: User,
-    path: routes.profile,
   },
 ]

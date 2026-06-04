@@ -3,13 +3,16 @@ import { routes } from "./shared/utils/routes"
 import { MainPage } from "./pages/MainPage"
 import { AssistantPage } from "./pages/AssistantPage"
 import { TicketsPage } from "./pages/TicketsPage"
-import { FavoritesPage } from "./pages/FavoritesPage"
 import { NotificationsPage } from "./pages/NotificationsPage"
 import { ProfilePage } from "./pages/ProfilePage"
+import { SettingsPage } from "./pages/SettingsPage"
 import { NotFoundPage } from "./pages/NotFoundPage"
 import { LoginPage } from "./pages/LoginPage"
 import { RegisterPage } from "./pages/RegisterPage"
 import { AnalyticsPage } from "./pages/AnalyticsPage"
+import { CreateTicketPage } from "./pages/CreateTicketPage"
+import { FeedbackPage } from "./pages/FeedbackPage"
+import { TicketStatusPage } from "./pages/TicketStatusPage"
 import { PrivateRoute } from "./shared/ui/PrivateRoute"
 import { EmployeeRoute } from "./shared/ui/EmployeeRoute"
 
@@ -38,6 +41,18 @@ const appRoutes: RouteObject[] = [
     element: <NotificationsPage />
   },
   {
+    path: routes.createTicket,
+    element: <CreateTicketPage />
+  },
+  {
+    path: routes.feedback,
+    element: <FeedbackPage />
+  },
+  {
+    path: routes.ticketStatus,
+    element: <TicketStatusPage />
+  },
+  {
     element: <PrivateRoute />,
     children: [
       {
@@ -46,8 +61,8 @@ const appRoutes: RouteObject[] = [
           { path: routes.analytics, element: <AnalyticsPage /> },
         ],
       },
-      { path: routes.favorites, element: <FavoritesPage /> },
       { path: routes.profile, element: <ProfilePage /> },
+      { path: routes.settings, element: <SettingsPage /> },
     ],
   },
   {
