@@ -17,9 +17,9 @@ const mapSession = (dto: ChatSessionDto): ChatSession => ({
 
 const mapMessage = (dto: MessageDto): Message => ({
   id: dto.id,
-  sessionId: dto.session_id,
-  role: dto.role,
-  content: dto.content,
+  sessionId: dto.chat_id,
+  role: dto.role === "client" ? "user" : "assistant",
+  content: dto.message,
   createdAt: dto.created_at,
 })
 
@@ -35,7 +35,7 @@ export const assistantRepository = {
   },
 
   sendMessage: async (sessionId: string, content: string): Promise<SendMessageResult> => {
-    const res = await assistantSource.sendMessage({ session_id: sessionId, content })
+    const res = await assistantSource.sendMessage({ chat_id: sessionId, content })
     return {
       userMessage: mapMessage(res.user_message),
       assistantMessage: mapMessage(res.assistant_message),
