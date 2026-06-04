@@ -43,8 +43,9 @@ export const ChatInput = ({
   }
 
   const handleSubmit = () => {
+    const files = attachedFiles
     setAttachedFiles([])
-    onSubmit()
+    onSubmit(files)
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -113,6 +114,7 @@ export const ChatInput = ({
           ref={fileInputRef}
           type="file"
           multiple
+          accept=".pdf,.docx,.doc,.txt,.md,.xlsx,.xls,.csv"
           className={styles.hiddenFileInput}
           onChange={handleFileChange}
         />

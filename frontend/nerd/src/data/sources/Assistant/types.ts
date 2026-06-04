@@ -22,10 +22,20 @@ export interface MessageDto {
 export interface SendMessageRequest {
   chat_id: string
   content: string
+  file_ids?: string[]
 }
 
 export interface CreateSessionRequest {
   first_message: string
+  file_ids?: string[]
+}
+
+export interface UploadedFileDto {
+  id: string
+  filename: string
+  content_type: string
+  size_bytes: number
+  created_at: string
 }
 
 export interface SendMessageResponse {

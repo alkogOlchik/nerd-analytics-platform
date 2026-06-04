@@ -8,8 +8,8 @@ export const useCreateSession = (onCreated: (result: CreateSessionResult) => voi
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (firstMessage: string) =>
-      assistantRepository.createSession(firstMessage),
+    mutationFn: ({ firstMessage, files }: { firstMessage: string; files?: File[] }) =>
+      assistantRepository.createSession(firstMessage, files),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: CHAT_SESSIONS_QUERY_KEY })
       queryClient.setQueryData(messagesQueryKey(result.session.id), result.messages)

@@ -29,7 +29,7 @@ from backend.app.schemas.ticket_extended import (
     TicketStatusHistoryResponse,
     TicketStatusPatch,
 )
-from backend.app.services import storage_service, ticket_service
+from backend.app.services import s3_service, ticket_service
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
 
@@ -213,16 +213,13 @@ async def upload_ticket_attachment(
 ):
     """Загрузить файл в S3/MinIO и привязать к тикету."""
     content = await file.read()
-    stored = storage_service.upload_bytes(
-        client_id=current_user.id,
-        filename=file.filename or "file",
-        content=content,
-        content_type=file.content_type,
-    )
+    filename = file.filename or "file"
+    content_type = file.content_type or "application/octet-stream"
+    s3_key = await s3_service.upload_file(current_user.id, filename, content, content_type)
     return await ticket_service.add_attachment(
         db,
         ticket_id,
         current_user.id,
         current_user.role,
-        AttachmentCreate(file_url=stored.file_url, file_type=stored.file_type),
+        AttachmentCreate(file_url=s3_key, file_type=content_type),
     )

@@ -35,6 +35,19 @@ _SUPPORTED_CONTENT_TYPES = {
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     "application/vnd.ms-excel",
     "text/csv",
+    "application/octet-stream",
+}
+
+_EXT_TO_CONTENT_TYPE: dict[str, str] = {
+    ".pdf": "application/pdf",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".doc": "application/msword",
+    ".txt": "text/plain",
+    ".md": "text/markdown",
+    ".rst": "text/x-rst",
+    ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ".xls": "application/vnd.ms-excel",
+    ".csv": "text/csv",
 }
 
 _MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
@@ -150,7 +163,11 @@ async def upload_files(
 ):
     results: list[ChatFile] = []
     for upload in files:
+        filename = upload.filename or "file"
+        ext = ("." + filename.rsplit(".", 1)[-1].lower()) if "." in filename else ""
         content_type = upload.content_type or "application/octet-stream"
+        if content_type == "application/octet-stream" and ext in _EXT_TO_CONTENT_TYPE:
+            content_type = _EXT_TO_CONTENT_TYPE[ext]
         if content_type not in _SUPPORTED_CONTENT_TYPES:
             raise HTTPException(
                 status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
@@ -159,11 +176,11 @@ async def upload_files(
         data = await upload.read()
         if len(data) > _MAX_FILE_SIZE:
             raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="File too large (max 50 MB)")
-        s3_key = await s3_service.upload_file(current_user.id, upload.filename or "file", data, content_type)
+        s3_key = await s3_service.upload_file(current_user.id, filename, data, content_type)
         cf = ChatFile(
             client_id=current_user.id,
             s3_key=s3_key,
-            filename=upload.filename or "file",
+            filename=filename,
             content_type=content_type,
             size_bytes=len(data),
         )

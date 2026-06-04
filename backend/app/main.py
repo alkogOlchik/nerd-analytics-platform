@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.app.api.v1 import ai, analytics, auth, files, notifications, reviews, tickets
+from backend.app.api.v1 import ai, analytics, auth, notifications, reviews, tickets
 from backend.app.services import analytics_service, notification_service
 from backend.core.kafka.consumer import event_consumer
 from backend.core.kafka.producer import event_producer
@@ -63,7 +63,6 @@ app.include_router(reviews.router)
 app.include_router(notifications.router)
 app.include_router(analytics.router)
 app.include_router(ai.router)
-app.include_router(files.router)
 
 
 @app.get("/health")

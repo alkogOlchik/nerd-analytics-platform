@@ -44,7 +44,7 @@ export const AssistantScreen = () => {
     if (initialMsg?.trim()) {
       autoSentRef.current = true
       setPendingFirstMessage(initialMsg)
-      createSession.mutate(initialMsg)
+      createSession.mutate({ firstMessage: initialMsg })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -53,16 +53,16 @@ export const AssistantScreen = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages, pendingFirstMessage])
 
-  const handleSend = () => {
+  const handleSend = (files: File[]) => {
     const text = inputValue.trim()
-    if (!text) return
+    if (!text && files.length === 0) return
 
     if (!effectiveSessionId) {
-      setPendingFirstMessage(text)
+      setPendingFirstMessage(text || `[${files.map((f) => f.name).join(", ")}]`)
       setInputValue("")
-      createSession.mutate(text)
+      createSession.mutate({ firstMessage: text, files })
     } else {
-      sendMessage.mutate(text)
+      sendMessage.mutate({ content: text, files })
       setInputValue("")
     }
   }

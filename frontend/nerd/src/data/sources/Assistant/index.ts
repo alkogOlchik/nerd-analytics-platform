@@ -6,6 +6,7 @@ import type {
   CreateSessionRequest,
   SendMessageResponse,
   CreateSessionResponse,
+  UploadedFileDto,
 } from "./types"
 
 const SESSIONS_KEY = "nerd_chat_sessions"
@@ -30,6 +31,15 @@ interface ApiChatResponse {
 }
 
 export const assistantSource = {
+  uploadFiles: async (files: File[]): Promise<UploadedFileDto[]> => {
+    const form = new FormData()
+    files.forEach((f) => form.append("files", f))
+    const { data } = await apiClient.post<UploadedFileDto[]>("/ai/files", form, {
+      headers: { "Content-Type": undefined },
+    })
+    return data
+  },
+
   getSessions: async (): Promise<ChatSessionDto[]> => {
     return [...loadSessions()].sort(
       (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
@@ -48,6 +58,7 @@ export const assistantSource = {
       message: req.content,
       model: "gemma4:e2b",
       chat_id: req.chat_id,
+      ...(req.file_ids?.length ? { file_ids: req.file_ids } : {}),
     })
 
     const sessions = loadSessions()
@@ -65,6 +76,7 @@ export const assistantSource = {
     const { data } = await apiClient.post<ApiChatResponse>("/ai/chat", {
       message: req.first_message,
       model: "gemma4:e2b",
+      ...(req.file_ids?.length ? { file_ids: req.file_ids } : {}),
     })
 
     const title =
@@ -93,4 +105,5 @@ export type {
   CreateSessionRequest,
   SendMessageResponse,
   CreateSessionResponse,
+  UploadedFileDto,
 }

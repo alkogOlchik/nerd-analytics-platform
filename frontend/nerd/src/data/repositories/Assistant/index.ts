@@ -34,16 +34,26 @@ export const assistantRepository = {
     return dtos.map(mapMessage)
   },
 
-  sendMessage: async (sessionId: string, content: string): Promise<SendMessageResult> => {
-    const res = await assistantSource.sendMessage({ chat_id: sessionId, content })
+  sendMessage: async (sessionId: string, content: string, files?: File[]): Promise<SendMessageResult> => {
+    let file_ids: string[] | undefined
+    if (files?.length) {
+      const uploaded = await assistantSource.uploadFiles(files)
+      file_ids = uploaded.map((f) => f.id)
+    }
+    const res = await assistantSource.sendMessage({ chat_id: sessionId, content, file_ids })
     return {
       userMessage: mapMessage(res.user_message),
       assistantMessage: mapMessage(res.assistant_message),
     }
   },
 
-  createSession: async (firstMessage: string): Promise<CreateSessionResult> => {
-    const res = await assistantSource.createSession({ first_message: firstMessage })
+  createSession: async (firstMessage: string, files?: File[]): Promise<CreateSessionResult> => {
+    let file_ids: string[] | undefined
+    if (files?.length) {
+      const uploaded = await assistantSource.uploadFiles(files)
+      file_ids = uploaded.map((f) => f.id)
+    }
+    const res = await assistantSource.createSession({ first_message: firstMessage, file_ids })
     return {
       session: mapSession(res.session),
       messages: res.messages.map(mapMessage),

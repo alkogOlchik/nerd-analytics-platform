@@ -8,11 +8,11 @@ export const useSendMessage = (sessionId: string | null) => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (content: string) => {
+    mutationFn: ({ content, files }: { content: string; files?: File[] }) => {
       if (!sessionId) throw new Error("No active session")
-      return assistantRepository.sendMessage(sessionId, content)
+      return assistantRepository.sendMessage(sessionId, content, files)
     },
-    onMutate: async (content: string) => {
+    onMutate: async ({ content }: { content: string; files?: File[] }) => {
       if (!sessionId) return undefined
       await queryClient.cancelQueries({ queryKey: messagesQueryKey(sessionId) })
       const previousMessages = queryClient.getQueryData<Message[]>(messagesQueryKey(sessionId))
