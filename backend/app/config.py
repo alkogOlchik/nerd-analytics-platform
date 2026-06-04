@@ -26,12 +26,11 @@ class Settings(BaseSettings):
     GITHUB_CLIENT_SECRET: str = ""
     OAUTH_REDIRECT_URI: str = "http://127.0.0.1:8001/auth/oauth/callback"
 
-    # S3 / MinIO (если bucket пуст — файлы в LOCAL_UPLOAD_DIR, URL через /files/local/…)
-    S3_BUCKET_NAME: str = ""
+    S3_BUCKET_NAME: str = "nerd-files"
     S3_REGION: str = "us-east-1"
-    S3_ACCESS_KEY_ID: str = ""
-    S3_SECRET_ACCESS_KEY: str = ""
-    S3_ENDPOINT_URL: str | None = None
+    S3_ACCESS_KEY: str = "minioadmin"
+    S3_SECRET_KEY: str = "minioadmin"
+    S3_ENDPOINT_URL: str = "http://localhost:9000"
     S3_PUBLIC_URL_PREFIX: str | None = None
     S3_PREFIX: str = "uploads"
     LOCAL_UPLOAD_DIR: str = "backend/storage/uploads"
@@ -43,7 +42,7 @@ class Settings(BaseSettings):
 
     @property
     def s3_configured(self) -> bool:
-        return bool(self.S3_BUCKET_NAME and self.S3_ACCESS_KEY_ID and self.S3_SECRET_ACCESS_KEY)
+        return bool(self.S3_BUCKET_NAME and self.S3_ACCESS_KEY and self.S3_SECRET_KEY)
 
 
 @lru_cache

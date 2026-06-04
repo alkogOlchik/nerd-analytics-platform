@@ -52,7 +52,7 @@ class JWTAuthMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
 
-http_client = httpx.AsyncClient(timeout=60.0)
+http_client = httpx.AsyncClient(timeout=300.0)
 
 
 @asynccontextmanager

@@ -43,6 +43,17 @@ class FileUploadResponse(BaseModel):
     size_bytes: int
 
 
+class ChatFileResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    filename: str
+    content_type: str
+    size_bytes: int
+    created_at: datetime
+
+
+
 class ChatRequest(BaseModel):
     """Первое сообщение: только message (+ model). chat_id создаётся в ответе."""
 
@@ -67,16 +78,13 @@ class ChatRequest(BaseModel):
         default=None,
         description="Опционально: привязка к тикету. Первый раз не указывать.",
     )
+    file_ids: list[uuid.UUID] | None = None
     product: str | None = None
     category: str | None = None
     resolved_by_ai: bool = False
     request_human: bool | None = Field(
         default=None,
         description="Явный запрос перевода на оператора (иначе детект по тексту сообщения)",
-    )
-    attachments: list[ChatAttachmentInput] = Field(
-        default_factory=list,
-        description="Вложения: сначала POST /ai/chat/attachments, затем передать file_url сюда",
     )
 
     @field_validator("ticket_id", "chat_id", mode="before")
@@ -87,9 +95,9 @@ class ChatRequest(BaseModel):
         return value
 
     @model_validator(mode="after")
-    def message_or_attachments(self):
-        if not self.message.strip() and not self.attachments:
-            raise ValueError("message or attachments required")
+    def message_or_file_ids_required(self):
+        if not self.message.strip() and not self.file_ids:
+            raise ValueError("message or file_ids required")
         return self
 
 
@@ -144,7 +152,6 @@ class ChatMessageResponse(BaseModel):
     resolved_by_ai: bool
     message: str
     created_at: datetime
-    attachments: list[ChatAttachmentResponse] = Field(default_factory=list)
 
 
 class EscalationOffer(BaseModel):

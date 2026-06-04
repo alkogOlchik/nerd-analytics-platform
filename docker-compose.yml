@@ -2,6 +2,18 @@ services:
 
   # ─── Infrastructure ────────────────────────────────────────────────────────
 
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+
   db:
     image: postgres:16
     ports:
@@ -55,15 +67,23 @@ services:
       DATABASE_URL: postgresql+asyncpg://postgres:password@db:5432/nerd_db
       ANALYTICS_DATABASE_URL: postgresql+asyncpg://postgres:password@db:5432/nerd_analytics_db
       KAFKA_URL: kafka:9092
-      ML_SERVICE_URL: http://ml-agent:8090
+      ML_SERVICE_URL: http://host.docker.internal:8091
       APP_SERVICE_URL: http://backend:8001
       SECRET_KEY: change-me-in-production
       ACCESS_TOKEN_EXPIRE_MINUTES: "30"
       REFRESH_TOKEN_EXPIRE_DAYS: "7"
+      S3_ENDPOINT_URL: http://minio:9000
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      S3_BUCKET_NAME: nerd-files
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       db:
         condition: service_healthy
       kafka:
+        condition: service_started
+      minio:
         condition: service_started
     expose:
       - "8001"

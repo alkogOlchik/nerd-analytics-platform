@@ -27,7 +27,7 @@ class MLQueryResult:
 
 
 class MLClient:
-    def __init__(self, base_url: str | None = None, timeout: float = 120.0) -> None:
+    def __init__(self, base_url: str | None = None, timeout: float = 300.0) -> None:
         self.base_url = (base_url or settings.ML_SERVICE_URL).rstrip("/")
         self.ollama_base = settings.OLLAMA_BASE_URL.rstrip("/")
         self.timeout = timeout
