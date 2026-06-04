@@ -462,7 +462,14 @@
 
 ## 6. Analytics — `/analytics` (только employee)
 
-Все запросы с токеном **employee**. Для `client` → **403**.
+Все запросы с токеном **employee** (`POST /auth/admin/login`). Для `client` → **403**.
+
+**Источник данных:** операционная БД `nerd_db` (актуальные тикеты/отзывы).  
+**Query (опционально):** `date_from`, `date_to`, алиасы `from`/`to`, `product`, `priority`, `category`.  
+**Динамика:** `GET /analytics/tickets/timeline` → `{ "items": [{ "date": "2025-01-01", "count": 12 }] }`.  
+**Прогноз:** `GET /analytics/tickets/forecast` — 7 дней вперёд (скользящее среднее).  
+**Дашборды целиком:** `GET /analytics/dashboard/1` … `/dashboard/6/forecast`.  
+**Витрина ETL:** `GET /analytics/warehouse/*` (без фильтров периода).
 
 ### `GET /analytics/tickets/summary`
 
@@ -540,6 +547,31 @@
 
 Прокси к ML-сервису (`ML_SERVICE_URL`, порт **8091**). При недоступном ML → **502**.
 
+### `POST /ai/chat/attachments`
+
+**Auth:** да · **Content-Type:** `multipart/form-data`
+
+Поле `file` — JPEG, PNG, WebP, GIF или PDF (до `FILE_UPLOAD_MAX_BYTES`, по умолчанию 10 МБ).
+
+Файл сохраняется в **S3/MinIO** (если заданы `S3_*` в `.env`) или локально (`LOCAL_UPLOAD_DIR`, URL вида `/files/local/…`).
+
+**Response 201:**
+
+```json
+{
+  "file_url": "http://127.0.0.1:8001/files/local/uploads/uuid/….pdf",
+  "file_type": "application/pdf",
+  "file_name": "scan.pdf",
+  "size_bytes": 12345
+}
+```
+
+Передайте `file_url` (и при желании `file_type`, `file_name`) в `attachments` при `POST /ai/chat`.
+
+Для тикета: `POST /tickets/{ticket_id}/attachments/upload` (тот же `file`, создаёт запись в `attachments`).
+
+---
+
 ### `POST /ai/chat`
 
 **Auth:** client (и employee, если разрешено политикой)
@@ -549,9 +581,18 @@
 ```json
 {
   "message": "Не работает оплата",
-  "model": "gemma4:e2b"
+  "model": "gemma4:e2b",
+  "attachments": [
+    {
+      "file_url": "http://127.0.0.1:8001/files/local/uploads/uuid/….png",
+      "file_type": "image/png",
+      "file_name": "screenshot.png"
+    }
+  ]
 }
 ```
+
+Нужно хотя бы одно из: непустой `message` или непустой `attachments`.
 
 **Продолжение диалога** — добавить `chat_id` из прошлого ответа:
 

@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, File, Query, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.api.deps import CurrentUser, get_current_user, require_employee, require_operator
@@ -29,7 +29,7 @@ from backend.app.schemas.ticket_extended import (
     TicketStatusHistoryResponse,
     TicketStatusPatch,
 )
-from backend.app.services import ticket_service
+from backend.app.services import storage_service, ticket_service
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
 
@@ -201,4 +201,28 @@ async def add_attachment(
 ):
     return await ticket_service.add_attachment(
         db, ticket_id, current_user.id, current_user.role, data
+    )
+
+
+@router.post("/{ticket_id}/attachments/upload", response_model=AttachmentResponse, status_code=201)
+async def upload_ticket_attachment(
+    ticket_id: uuid.UUID,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    """Загрузить файл в S3/MinIO и привязать к тикету."""
+    content = await file.read()
+    stored = storage_service.upload_bytes(
+        client_id=current_user.id,
+        filename=file.filename or "file",
+        content=content,
+        content_type=file.content_type,
+    )
+    return await ticket_service.add_attachment(
+        db,
+        ticket_id,
+        current_user.id,
+        current_user.role,
+        AttachmentCreate(file_url=stored.file_url, file_type=stored.file_type),
     )

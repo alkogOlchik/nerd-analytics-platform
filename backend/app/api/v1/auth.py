@@ -6,6 +6,7 @@ from backend.app.db.session import get_db
 from backend.app.models.enums import UserRole
 from backend.app.schemas.auth import (
     AccountDeletionResponse,
+    AdminLoginResponse,
     LoginRequest,
     LogoutRequest,
     NotificationPreferencesResponse,
@@ -30,6 +31,12 @@ async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
     return await auth_service.login(db, data.username, data.password)
 
 
+@router.post("/admin/login", response_model=AdminLoginResponse)
+async def admin_login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
+    """Вход сотрудника (employees). Клиентский аккаунт с тем же username не подойдёт."""
+    return await auth_service.login_employee(db, data.username, data.password)
+
+
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh(data: RefreshRequest):
     return await auth_service.refresh_tokens(data.refresh_token)
@@ -47,6 +54,7 @@ async def me(current_user: CurrentUser = Depends(get_current_user)):
         id=current_user.id,
         username=current_user.username,
         role=current_user.role,
+        employee_role=current_user.employee_role,
         email=current_user.email,
         full_name=current_user.full_name,
     )

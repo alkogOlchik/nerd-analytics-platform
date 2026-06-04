@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -8,15 +8,20 @@ from backend.app.api.deps import CurrentUser, get_current_user
 from backend.app.db.session import get_db
 from backend.app.models.ticket import Ticket
 from backend.app.schemas.ai import (
+    ChatEscalateRequest,
     ChatMessageResponse,
     ChatRequest,
     ChatResponse,
     ClassifyReviewRequest,
     ClassifyTicketRequest,
+    EscalationOffer,
+    FileUploadResponse,
     ReviewClassificationResponse,
     TicketClassificationResponse,
 )
+from backend.app.services import storage_service
 from backend.app.schemas.ticket import TicketResponse
+from backend.app.schemas.ticket_extended import TicketEscalateResponse
 from backend.app.services import ai_service
 
 router = APIRouter(prefix="/ai", tags=["ai"])
@@ -41,18 +46,71 @@ async def classify_review(
     return ReviewClassificationResponse.model_validate(review)
 
 
+@router.post("/chat/attachments", response_model=FileUploadResponse, status_code=201)
+async def upload_chat_attachment(
+    file: UploadFile = File(...),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    """Загрузить фото или PDF в S3/MinIO (или локально). Вернувшийся file_url передать в POST /ai/chat."""
+    content = await file.read()
+    stored = storage_service.upload_bytes(
+        client_id=current_user.id,
+        filename=file.filename or "file",
+        content=content,
+        content_type=file.content_type,
+    )
+    return FileUploadResponse(
+        file_url=stored.file_url,
+        file_type=stored.file_type,
+        file_name=stored.file_name,
+        size_bytes=stored.size_bytes,
+    )
+
+
 @router.post("/chat", response_model=ChatResponse)
 async def chat(
     data: ChatRequest,
     db: AsyncSession = Depends(get_db),
     current_user: CurrentUser = Depends(get_current_user),
 ):
-    chat_id, user_msg, assistant_msg, ml_response = await ai_service.chat(db, current_user.id, data)
+    chat_id, user_msg, assistant_msg, ml_response, escalation = await ai_service.chat(
+        db, current_user.id, data
+    )
     return ChatResponse(
         chat_id=chat_id,
         user_message=ChatMessageResponse.model_validate(user_msg),
         assistant_message=ChatMessageResponse.model_validate(assistant_msg),
         ml_response=ml_response,
+        escalation=escalation,
+    )
+
+
+@router.get("/escalation/options", response_model=EscalationOffer)
+async def escalation_options(_: CurrentUser = Depends(get_current_user)):
+    """Справочник продуктов, категорий и приоритетов для формы эскалации."""
+    from backend.app.services import escalation_service
+
+    return escalation_service.build_escalation_options()
+
+
+@router.post("/chat/escalate", response_model=TicketEscalateResponse, status_code=201)
+async def chat_escalate(
+    data: ChatEscalateRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    """Создать тикет из чата после выбора продукта, категории и приоритета."""
+    from backend.app.services import escalation_service
+
+    return await escalation_service.confirm_chat_escalation(
+        db,
+        current_user.id,
+        chat_id=data.chat_id,
+        product=data.product,
+        user_priority=data.user_priority,
+        category=data.category,
+        description=data.description,
+        model=data.model,
     )
 
 

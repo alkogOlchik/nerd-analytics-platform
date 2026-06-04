@@ -142,7 +142,7 @@ async def test_analytics_ai_efficiency(analyst_client):
         top_resolved_categories=[],
     )
     with patch(
-        "backend.app.api.v1.analytics.analytics_service.ai_efficiency",
+        "backend.app.api.v1.analytics.analytics.ai_efficiency",
         new_callable=AsyncMock,
         return_value=payload,
     ):
@@ -155,7 +155,7 @@ async def test_analytics_ai_efficiency(analyst_client):
 async def test_analytics_tickets_anomalies(analyst_client):
     payload = TicketAnomaliesResponse(items=[])
     with patch(
-        "backend.app.api.v1.analytics.analytics_service.tickets_anomalies",
+        "backend.app.api.v1.analytics.analytics.tickets_anomalies",
         new_callable=AsyncMock,
         return_value=payload,
     ):

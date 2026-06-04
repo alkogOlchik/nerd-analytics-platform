@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from backend.app.config import get_settings
 from backend.app.models.base import Base
-from backend.app.models import chat, notification, review, ticket, user  # noqa: F401
+from backend.app.models import chat, chat_attachment, notification, review, ticket, user  # noqa: F401
 
 config = context.config
 settings = get_settings()

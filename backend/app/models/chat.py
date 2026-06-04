@@ -26,3 +26,9 @@ class ChatHistory(Base, TimestampMixin):
 
     client = relationship("Client", back_populates="chat_messages")
     ticket = relationship("Ticket", back_populates="chat_messages")
+    attachments = relationship(
+        "ChatAttachment",
+        back_populates="chat_message",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )

@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.app.config import get_settings
 from backend.app.models.enums import UserRole
 from backend.app.models.user import Client, Employee
-from backend.app.schemas.auth import NotificationPreferencesResponse, TokenResponse
+from backend.app.schemas.auth import AdminLoginResponse, NotificationPreferencesResponse, TokenResponse
 from backend.app.schemas.user import ClientRegister
 
 settings = get_settings()
@@ -100,6 +100,31 @@ async def login(db: AsyncSession, username: str, password: str) -> TokenResponse
         return create_tokens(employee.id, UserRole.employee)
 
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+
+
+async def login_employee(db: AsyncSession, username: str, password: str) -> AdminLoginResponse:
+    """Вход только для таблицы employees (аналитика / операторы)."""
+    result = await db.execute(select(Employee).where(Employee.username == username))
+    employee = result.scalar_one_or_none()
+    if not employee:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+    if employee.status != "active":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Employee account is inactive",
+        )
+    if not verify_password(password, employee.password_hash):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+
+    tokens = create_tokens(employee.id, UserRole.employee)
+    return AdminLoginResponse(
+        access_token=tokens.access_token,
+        refresh_token=tokens.refresh_token,
+        token_type=tokens.token_type,
+        role=UserRole.employee.value,
+        employee_role=employee.role,
+        username=employee.username,
+    )
 
 
 async def refresh_tokens(refresh_token: str) -> TokenResponse:

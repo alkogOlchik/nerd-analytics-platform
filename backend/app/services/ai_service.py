@@ -8,12 +8,17 @@ from typing import Any
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
+from backend.app.config import get_settings
 from backend.app.models.chat import ChatHistory
+from backend.app.models.chat_attachment import ChatAttachment
 from backend.app.models.enums import ChatRole, ReviewCategory, Sentiment, TicketCategory
 from backend.app.models.review import Review
 from backend.app.models.ticket import Ticket
-from backend.app.schemas.ai import ChatRequest
+from backend.app.schemas.ai import ChatAttachmentInput, ChatRequest, EscalationOffer
+from backend.app.services import storage_service
+from backend.app.services import escalation_service
 from backend.app.services.ml_client import ml_client
 from backend.app.utils.keywords import join_keywords
 
@@ -155,11 +160,48 @@ async def classify_review(
     return review
 
 
+async def _save_chat_attachments(
+    db: AsyncSession,
+    *,
+    client_id: uuid.UUID,
+    user_msg: ChatHistory,
+    items: list[ChatAttachmentInput],
+) -> list[ChatAttachment]:
+    settings = get_settings()
+    saved: list[ChatAttachment] = []
+    for item in items:
+        storage_service.assert_file_url_owned_by_client(settings, client_id, item.file_url)
+        row = ChatAttachment(
+            chat_history_id=user_msg.id,
+            client_id=client_id,
+            file_url=item.file_url,
+            file_type=item.file_type,
+            file_name=item.file_name,
+            size_bytes=None,
+        )
+        db.add(row)
+        saved.append(row)
+    if saved:
+        await db.flush()
+        user_msg.attachments.extend(saved)
+    return saved
+
+
+def _message_for_ml(data: ChatRequest) -> str:
+    text = data.message.strip()
+    if text:
+        return text
+    if data.attachments:
+        names = ", ".join(a.file_name or a.file_url for a in data.attachments[:3])
+        return f"[Вложения: {names}]"
+    return data.message
+
+
 async def chat(
     db: AsyncSession,
     client_id: uuid.UUID,
     data: ChatRequest,
-) -> tuple[uuid.UUID, ChatHistory, ChatHistory, dict]:
+) -> tuple[uuid.UUID, ChatHistory, ChatHistory, dict, EscalationOffer | None]:
     ticket: Ticket | None = None
     if data.ticket_id:
         ticket_result = await db.execute(select(Ticket).where(Ticket.id == data.ticket_id))
@@ -173,6 +215,9 @@ async def chat(
     product = data.product or (ticket.product if ticket else None)
     category = data.category or (ticket.final_category or ticket.ai_suggested_category if ticket else None)
 
+    user_text = data.message.strip() or "📎 Вложение"
+    ml_text = _message_for_ml(data)
+
     user_msg = ChatHistory(
         chat_id=chat_id,
         client_id=client_id,
@@ -181,30 +226,57 @@ async def chat(
         product=product,
         category=category,
         resolved_by_ai=data.resolved_by_ai,
-        message=data.message,
+        message=user_text,
     )
     db.add(user_msg)
     await db.flush()
+    if data.attachments:
+        await _save_chat_attachments(
+            db,
+            client_id=client_id,
+            user_msg=user_msg,
+            items=data.attachments,
+        )
 
-    ml_result = await ml_client.query(data.message, model=data.model)
+    escalation: EscalationOffer | None = None
+    if escalation_service.wants_human_agent(ml_text, data.request_human):
+        escalation = await escalation_service.build_escalation_offer(
+            db,
+            client_id,
+            chat_id=chat_id,
+            message=ml_text,
+            model=data.model,
+            ticket=ticket,
+        )
+        answer = escalation_service.format_escalation_assistant_message(
+            escalation, has_ticket=ticket is not None
+        )
+        ml_response: dict = {
+            "answer": answer,
+            "model": data.model,
+            "escalation": escalation.model_dump(),
+        }
+    else:
+        ml_result = await ml_client.query(ml_text, model=data.model)
+        answer = ml_result.answer
+        ml_response = ml_result.raw or {"answer": answer, "model": ml_result.model}
 
     assistant_msg = ChatHistory(
         chat_id=chat_id,
         client_id=client_id,
         ticket_id=data.ticket_id,
         role=ChatRole.ai.value,
-        product=product,
-        category=category,
-        resolved_by_ai=data.resolved_by_ai,
-        message=ml_result.answer,
+        product=product or (escalation.suggested_product if escalation else None),
+        category=category or (escalation.suggested_category if escalation else None),
+        resolved_by_ai=False if escalation else data.resolved_by_ai,
+        message=answer,
     )
     db.add(assistant_msg)
     await db.commit()
     await db.refresh(user_msg)
     await db.refresh(assistant_msg)
 
-    ml_response = ml_result.raw or {"answer": ml_result.answer, "model": ml_result.model}
-    return chat_id, user_msg, assistant_msg, ml_response
+    return chat_id, user_msg, assistant_msg, ml_response, escalation
 
 
 async def get_chat_history(
@@ -216,7 +288,11 @@ async def get_chat_history(
     skip: int = 0,
     limit: int = 50,
 ) -> list[ChatHistory]:
-    query = select(ChatHistory).where(ChatHistory.client_id == client_id)
+    query = (
+        select(ChatHistory)
+        .options(selectinload(ChatHistory.attachments))
+        .where(ChatHistory.client_id == client_id)
+    )
     if chat_id:
         query = query.where(ChatHistory.chat_id == chat_id)
     if ticket_id:

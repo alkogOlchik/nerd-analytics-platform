@@ -44,5 +44,9 @@ class UserMeResponse(BaseModel):
     id: uuid.UUID
     username: str
     role: UserRole
+    employee_role: str | None = Field(
+        default=None,
+        description="Роль сотрудника: analyst — доступ к /analytics",
+    )
     email: str | None = None
     full_name: str | None = None

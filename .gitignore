@@ -5,6 +5,9 @@
 !.env.example
 !**/.env.example
 
+# Uploaded files (local dev without S3)
+backend/storage/uploads/
+
 # Python
 __pycache__/
 *.py[cod]

@@ -59,6 +59,30 @@ python -m pytest tests/ -v
 
 Ручные сценарии: register → login → tickets → reviews → `/ai/chat` (нужен ML, см. [ML.md](ML.md)).
 
+**Сотрудник / админка (`/analytics` на фронте):**
+
+```powershell
+# из корня репозитория, Postgres и alembic upgrade уже применены
+python -m backend.scripts.create_employee
+# роль по умолчанию analyst — иначе /analytics вернёт 403
+python -m backend.scripts.create_employee --username admin --password admin123 --role analyst
+```
+
+Затем `POST /auth/login` → `/auth/me`: `"role": "employee"`.
+
+**Данные для дашбордов** — отдельная БД `nerd_analytics_db` (не `nerd_db`):
+
+```powershell
+# БД создаётся скриптом init-db.sh при docker compose из корня, иначе:
+docker exec -it <postgres> psql -U postgres -c "CREATE DATABASE nerd_analytics_db;"
+cd backend
+alembic -c analytics_alembic.ini upgrade head
+cd ..
+python -m backend.scripts.build_analytics_warehouse
+```
+
+В `backend/.env` желательно: `ANALYTICS_DATABASE_URL=postgresql+asyncpg://postgres:password@localhost:5436/nerd_analytics_db`
+
 ## Kafka (опционально)
 
 ```powershell

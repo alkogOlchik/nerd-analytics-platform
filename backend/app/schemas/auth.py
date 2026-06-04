@@ -12,6 +12,14 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
 
 
+class AdminLoginResponse(TokenResponse):
+    """Токены + роль сотрудника (для входа в аналитику / админку)."""
+
+    role: str = "employee"
+    employee_role: str | None = None
+    username: str | None = None
+
+
 class RefreshRequest(BaseModel):
     refresh_token: str
 

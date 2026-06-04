@@ -1,9 +1,9 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from backend.app.models.enums import ChatRole
+from backend.app.models.enums import ChatRole, TicketPriority, TicketProduct
 from backend.app.utils.keywords import split_keywords
 
 
@@ -17,6 +17,30 @@ class ClassifyReviewRequest(BaseModel):
     review_id: uuid.UUID
     text: str = Field(min_length=1)
     model: str = "gemma4:e2b"
+
+
+class ChatAttachmentInput(BaseModel):
+    file_url: str = Field(min_length=1, max_length=1024)
+    file_type: str | None = Field(default=None, max_length=64)
+    file_name: str | None = Field(default=None, max_length=255)
+
+
+class ChatAttachmentResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    file_url: str
+    file_type: str | None
+    file_name: str | None
+    size_bytes: int | None
+    created_at: datetime
+
+
+class FileUploadResponse(BaseModel):
+    file_url: str
+    file_type: str
+    file_name: str
+    size_bytes: int
 
 
 class ChatRequest(BaseModel):
@@ -33,7 +57,7 @@ class ChatRequest(BaseModel):
         }
     )
 
-    message: str = Field(min_length=1)
+    message: str = ""
     model: str = "gemma4:e2b"
     chat_id: uuid.UUID | None = Field(
         default=None,
@@ -46,6 +70,14 @@ class ChatRequest(BaseModel):
     product: str | None = None
     category: str | None = None
     resolved_by_ai: bool = False
+    request_human: bool | None = Field(
+        default=None,
+        description="Явный запрос перевода на оператора (иначе детект по тексту сообщения)",
+    )
+    attachments: list[ChatAttachmentInput] = Field(
+        default_factory=list,
+        description="Вложения: сначала POST /ai/chat/attachments, затем передать file_url сюда",
+    )
 
     @field_validator("ticket_id", "chat_id", mode="before")
     @classmethod
@@ -53,6 +85,12 @@ class ChatRequest(BaseModel):
         if value is None or value == "":
             return None
         return value
+
+    @model_validator(mode="after")
+    def message_or_attachments(self):
+        if not self.message.strip() and not self.attachments:
+            raise ValueError("message or attachments required")
+        return self
 
 
 class TicketClassificationResponse(BaseModel):
@@ -106,6 +144,37 @@ class ChatMessageResponse(BaseModel):
     resolved_by_ai: bool
     message: str
     created_at: datetime
+    attachments: list[ChatAttachmentResponse] = Field(default_factory=list)
+
+
+class EscalationOffer(BaseModel):
+    """Подсказки для UI при эскалации на оператора."""
+
+    required: bool = True
+    suggested_product: str | None = None
+    suggested_category: str | None = None
+    confidence: float | None = None
+    products: list[str] = Field(default_factory=list)
+    categories: list[str] = Field(default_factory=list)
+    priorities: list[str] = Field(default_factory=list)
+    priority_labels: dict[str, str] = Field(default_factory=dict)
+
+
+class ChatEscalateRequest(BaseModel):
+    """Подтверждение эскалации после POST /ai/chat с escalation.required=true."""
+
+    chat_id: uuid.UUID
+    product: TicketProduct
+    user_priority: TicketPriority
+    category: str | None = Field(
+        default=None,
+        description="Если не указано — берётся из ML-подсказки или classify",
+    )
+    description: str | None = Field(
+        default=None,
+        description="Доп. текст для классификации; иначе история чата",
+    )
+    model: str = "gemma4:e2b"
 
 
 class ChatResponse(BaseModel):
@@ -113,3 +182,4 @@ class ChatResponse(BaseModel):
     user_message: ChatMessageResponse
     assistant_message: ChatMessageResponse
     ml_response: dict
+    escalation: EscalationOffer | None = None

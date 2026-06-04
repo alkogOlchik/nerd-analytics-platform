@@ -96,6 +96,24 @@ services:
     depends_on:
       - gateway
 
+  # ─── MinIO (optional, S3-compatible storage for chat/ticket files) ─────────
+  # Enable: docker compose --profile storage up
+  # Console: http://localhost:9001  (minioadmin / minioadmin)
+  # Create bucket "nerd-uploads" in console, then set S3_* in backend .env
+
+  minio:
+    image: minio/minio:latest
+    profiles: ["storage"]
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+
   # ─── ML Agent (optional) ───────────────────────────────────────────────────
   # Requires Ollama running on the host. Enable with: docker compose --profile ml up
 
@@ -116,3 +134,4 @@ services:
 
 volumes:
   pgdata:
+  minio_data:

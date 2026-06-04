@@ -4,7 +4,7 @@
 **Swagger:** http://127.0.0.1:8001/docs  
 **Auth:** `Authorization: Bearer <access_token>`
 
-Публичные пути: `/auth/register`, `/auth/login`, `/auth/refresh`, `/health`
+Публичные пути: `/auth/register`, `/auth/login`, `/auth/admin/login`, `/auth/refresh`, `/health`
 
 ---
 
@@ -14,12 +14,22 @@
 |-------|------|
 | POST | `/auth/register` |
 | POST | `/auth/login` |
+| POST | `/auth/admin/login` |
 | POST | `/auth/refresh` |
 | POST | `/auth/logout` |
 | GET | `/auth/me` |
 
 Login response: `{ access_token, refresh_token, token_type: "bearer" }`  
-Me: `{ id, username, role: "client"|"employee", email?, full_name? }`
+
+**Admin login** (`/auth/admin/login`) — только `employees`, тело как у login:
+
+```json
+{ "username": "admin", "password": "..." }
+```
+
+Ответ: токены + `role: "employee"`, `employee_role` (`analyst` | `operator` | …), `username`.
+
+Me: `{ id, username, role: "client"|"employee", employee_role?, email?, full_name? }`
 
 ---
 
@@ -66,15 +76,49 @@ Me: `{ id, username, role: "client"|"employee", email?, full_name? }`
 
 ---
 
-## Analytics (employee only)
+## Analytics (employee, nerd_db)
 
-| Метод | Путь |
-|-------|------|
-| GET | `/analytics/tickets/summary` |
-| GET | `/analytics/tickets/sla` |
-| GET | `/analytics/ai/accuracy` |
-| GET | `/analytics/reviews/summary` |
-| GET | `/analytics/reviews/keywords` |
+**Auth:** `POST /auth/admin/login` → токен сотрудника.
+
+**Query на всех операционных ручках** (опционально):
+
+- `date_from`, `date_to` — период (по умолчанию последние 30 дней)
+- `from`, `to` — алиасы для `date_from` / `date_to`
+- `product` — enum продукта
+- `priority` — `low` | `medium` | `high`
+- `category` — категория
+
+### Гранулярные ручки (для текущего фронта)
+
+| Метод | Путь | Назначение |
+|-------|------|------------|
+| GET | `/analytics/tickets/summary` | Агрегаты по статусу/продукту/категории |
+| GET | `/analytics/tickets/timeline` | **Динамика по дням** `[{ date, count }]` |
+| GET | `/analytics/tickets/dynamics` | Алиас `timeline` |
+| GET | `/analytics/tickets/sla` | SLA сводка |
+| GET | `/analytics/tickets/reopens` | Возвраты |
+| GET | `/analytics/tickets/anomalies` | Аномалии 48ч |
+| GET | `/analytics/tickets/forecast` | Прогноз 7 дней (MA) |
+| GET | `/analytics/ai/accuracy` | Точность классификации |
+| GET | `/analytics/ai/efficiency` | Эффективность ИИ |
+| GET | `/analytics/admin/workload` | Нагрузка операторов |
+| GET | `/analytics/admin/sla` | SLA по приоритетам |
+| GET | `/analytics/admin/heatmap` | Heatmap TTFR |
+| GET | `/analytics/users/demographics` | Демография |
+| GET | `/analytics/users/retention` | Retention |
+| GET | `/analytics/reviews/summary` | Сводка отзывов |
+| GET | `/analytics/reviews/keywords` | Ключевые слова |
+| GET | `/analytics/reviews/dynamics` | Динамика sentiment по дням |
+
+### Дашборды (один запрос на экран UI)
+
+| GET | `/analytics/dashboard/1` … `/dashboard/5` |
+| GET | `/analytics/dashboard/6/tickets` |
+| GET | `/analytics/dashboard/6/forecast` | только `product`, `category` |
+
+### Витрина (после ETL, без фильтров периода)
+
+| GET | `/analytics/warehouse/tickets/summary` и др. |
 
 ---
 
@@ -84,12 +128,18 @@ Me: `{ id, username, role: "client"|"employee", email?, full_name? }`
 |-------|------|
 | POST | `/ai/classify/ticket` |
 | POST | `/ai/classify/review` |
+| POST | `/ai/chat/attachments` |
 | POST | `/ai/chat` |
 | GET | `/ai/chat/history` |
+| POST | `/tickets/{id}/attachments/upload` |
 | GET | `/ai/classify/ticket/{ticket_id}` |
 
-**Chat body:** `{ message, model?, chat_id?, ticket_id?, product?, category?, resolved_by_ai? }`  
-**Chat response:** `{ chat_id, user_message, assistant_message, ml_response }`  
+**Upload (multipart `file`):** JPEG/PNG/WebP/GIF/PDF → `{ file_url, file_type, file_name, size_bytes }`. Без S3 — локально, URL `/files/local/…`.
+
+**Chat body:** `{ message?, attachments?: [{ file_url, file_type?, file_name? }], model?, chat_id?, … }` — нужен текст или вложения.
+
+**Chat response:** `{ chat_id, user_message, assistant_message, ml_response }` — в сообщениях поле `attachments[]`.
+
 **History query:** `chat_id` или `ticket_id`
 
 Проверка ML: [ML.md](ML.md)
