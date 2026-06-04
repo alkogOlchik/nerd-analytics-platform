@@ -1,0 +1,19 @@
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 720px;
+}
+
+.kpiRow {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.chartWithExport {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}

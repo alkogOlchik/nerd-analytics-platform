@@ -1,0 +1,27 @@
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.icon {
+  color: var(--color-text-secondary, #888);
+}
+
+.btn {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--color-text-secondary, #888);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--color-text-white, #fff);
+  }
+}

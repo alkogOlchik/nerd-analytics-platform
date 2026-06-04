@@ -27,8 +27,19 @@ const mapUserDto = (dto: UserDto): User => ({
   createdAt: dto.created_at,
 })
 
+// Если задана VITE_MOCK_USER_ROLE — позволяет работать без запущенного бэкенда.
+// Допустимые значения: "employee" | "client"
+// Пример: VITE_MOCK_USER_ROLE=employee в .env.local
+const MOCK_ROLE = import.meta.env.VITE_MOCK_USER_ROLE as User["role"] | undefined
+
+const MOCK_USER: User = {
+  id: "mock-user-id",
+  username: "mock_employee",
+  role: MOCK_ROLE ?? "employee",
+}
+
 export const authRepository = {
-  hasTokens: () => Boolean(getAccessToken()),
+  hasTokens: () => Boolean(getAccessToken()) || Boolean(MOCK_ROLE),
   getRefreshToken,
   clearTokens,
   setTokens,
@@ -55,6 +66,7 @@ export const authRepository = {
   },
 
   me: async (): Promise<User> => {
+    if (MOCK_ROLE) return MOCK_USER
     const dto = await authSource.me()
     return mapUserDto(dto)
   },

@@ -9,7 +9,9 @@ import { ProfilePage } from "./pages/ProfilePage"
 import { NotFoundPage } from "./pages/NotFoundPage"
 import { LoginPage } from "./pages/LoginPage"
 import { RegisterPage } from "./pages/RegisterPage"
+import { AnalyticsPage } from "./pages/AnalyticsPage"
 import { PrivateRoute } from "./shared/ui/PrivateRoute"
+import { EmployeeRoute } from "./shared/ui/EmployeeRoute"
 
 const appRoutes: RouteObject[] = [
   {
@@ -28,16 +30,22 @@ const appRoutes: RouteObject[] = [
     path: routes.assistant,
     element: <AssistantPage />,
   },
-  { path: routes.tickets, 
-    element: <TicketsPage /> 
+  { path: routes.tickets,
+    element: <TicketsPage />
   },
-  { 
+  {
     path: routes.notifications,
-    element: <NotificationsPage /> 
+    element: <NotificationsPage />
   },
   {
     element: <PrivateRoute />,
     children: [
+      {
+        element: <EmployeeRoute />,
+        children: [
+          { path: routes.analytics, element: <AnalyticsPage /> },
+        ],
+      },
       { path: routes.favorites, element: <FavoritesPage /> },
       { path: routes.profile, element: <ProfilePage /> },
     ],
