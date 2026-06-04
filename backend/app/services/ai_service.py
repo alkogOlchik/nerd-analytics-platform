@@ -201,8 +201,32 @@ async def chat(
                 raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
             context_parts.append(f"=== {cf.filename} ===\n{text}")
 
-    user_text = data.message.strip() or "📎 Вложение"
-    ml_text = "\n\n".join(context_parts + [data.message]) if context_parts else _message_for_ml(data)
+    _HISTORY_FILE_CHARS = 3_000
+    stored_parts: list[str] = []
+    for part in context_parts:
+        stored_parts.append(part[:_HISTORY_FILE_CHARS] + ("…" if len(part) > _HISTORY_FILE_CHARS else ""))
+    raw_text = data.message.strip()
+    user_text = "\n\n".join(stored_parts + ([raw_text] if raw_text else [])).strip() or "📎 Вложение"
+
+    history_parts: list[str] = []
+    if data.chat_id:
+        history_rows = (
+            await db.execute(
+                select(ChatHistory)
+                .where(ChatHistory.chat_id == data.chat_id)
+                .order_by(ChatHistory.created_at.asc())
+                .limit(20)
+            )
+        ).scalars().all()
+        for row in history_rows:
+            role_label = "Пользователь" if row.role == ChatRole.client.value else "Ассистент"
+            history_parts.append(f"{role_label}: {row.message}")
+
+    current_query = "\n\n".join(context_parts + [data.message]) if context_parts else _message_for_ml(data)
+    if history_parts:
+        ml_text = "История диалога:\n" + "\n".join(history_parts) + "\n\nТекущий вопрос:\n" + current_query
+    else:
+        ml_text = current_query
 
     user_msg = ChatHistory(
         chat_id=chat_id,
