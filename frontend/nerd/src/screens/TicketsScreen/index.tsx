@@ -1,22 +1,29 @@
 import { useState, type ReactNode } from "react"
-import { AlertTriangle, HelpCircle, Star, FileText } from "lucide-react"
+import { Circle, Loader, CheckCircle, RotateCcw, FileText } from "lucide-react"
 import styles from "./TicketsScreen.module.scss"
 import { Sidebar, UserMenu, TicketCard } from "modules"
 import { useTickets } from "domain/Tickets"
-import type { TicketCategory } from "data/repositories/Tickets"
+import type { TicketStatus } from "data/repositories/Tickets"
 
-const TABS: { category: TicketCategory; label: string; icon: ReactNode }[] = [
-  { category: "complaint", label: "Жалобы", icon: <AlertTriangle size={15} /> },
-  { category: "support", label: "Помощь", icon: <HelpCircle size={15} /> },
-  { category: "review", label: "Отзывы", icon: <Star size={15} /> },
+type TabValue = "all" | TicketStatus
+
+const TABS: { value: TabValue; label: string; icon: ReactNode }[] = [
+  { value: "all", label: "Все", icon: <FileText size={15} /> },
+  { value: "open", label: "Открытые", icon: <Circle size={15} /> },
+  { value: "in_progress", label: "В обработке", icon: <Loader size={15} /> },
+  { value: "closed", label: "Закрытые", icon: <CheckCircle size={15} /> },
+  { value: "reopened", label: "Переоткрытые", icon: <RotateCcw size={15} /> },
 ]
 
 export const TicketsScreen = () => {
-  const [activeCategory, setActiveCategory] = useState<TicketCategory>("complaint")
+  const [activeTab, setActiveTab] = useState<TabValue>("all")
   const { data: tickets = [], isLoading } = useTickets()
 
-  const filteredTickets = tickets.filter((t) => t.category === activeCategory)
-  const countByCategory = (cat: TicketCategory) => tickets.filter((t) => t.category === cat).length
+  const filteredTickets =
+    activeTab === "all" ? tickets : tickets.filter((t) => t.status === activeTab)
+
+  const countByTab = (tab: TabValue) =>
+    tab === "all" ? tickets.length : tickets.filter((t) => t.status === tab).length
 
   return (
     <div className={styles.page}>
@@ -29,16 +36,16 @@ export const TicketsScreen = () => {
 
         <div className={styles.content}>
           <div className={styles.tabs}>
-            {TABS.map(({ category, label, icon }) => (
+            {TABS.map(({ value, label, icon }) => (
               <button
-                key={category}
-                className={`${styles.tab} ${activeCategory === category ? styles.tabActive : ""}`}
-                onClick={() => setActiveCategory(category)}
+                key={value}
+                className={`${styles.tab} ${activeTab === value ? styles.tabActive : ""}`}
+                onClick={() => setActiveTab(value)}
               >
                 {icon}
                 <span>{label}</span>
                 {!isLoading && (
-                  <span className={styles.tabCount}>{countByCategory(category)}</span>
+                  <span className={styles.tabCount}>{countByTab(value)}</span>
                 )}
               </button>
             ))}

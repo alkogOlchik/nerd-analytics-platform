@@ -1,27 +1,46 @@
-import { MOCK_NOTIFICATIONS } from "./constants"
+import { apiClient } from "data/apiClient"
 import type { NotificationDto } from "./types"
 
-const mutableMocks: NotificationDto[] = [...MOCK_NOTIFICATIONS]
+const READ_IDS_KEY = "nerd_notifications_read"
+const READ_ALL_TS_KEY = "nerd_notifications_read_all"
 
-const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
+const getReadIds = (): Set<string> => {
+  try {
+    return new Set<string>(JSON.parse(localStorage.getItem(READ_IDS_KEY) ?? "[]"))
+  } catch {
+    return new Set()
+  }
+}
+
+const saveReadIds = (ids: Set<string>) => {
+  localStorage.setItem(READ_IDS_KEY, JSON.stringify([...ids]))
+}
 
 export const notificationsSource = {
-  getNotifications: async (): Promise<NotificationDto[]> => {
-    await delay(300)
-    return [...mutableMocks]
+  getNotifications: () =>
+    apiClient.get<NotificationDto[]>("/notifications", { params: { limit: 100 } }).then((r) => r.data),
+
+  getNotification: (id: string) =>
+    apiClient.get<NotificationDto>(`/notifications/${id}`).then((r) => r.data),
+
+  markAsRead: (id: string): Promise<void> => {
+    const ids = getReadIds()
+    ids.add(id)
+    saveReadIds(ids)
+    return Promise.resolve()
   },
 
-  markAsRead: async (id: string): Promise<void> => {
-    await delay(200)
-    const item = mutableMocks.find((n) => n.id === id)
-    if (item) item.is_read = true
+  markAllAsRead: (): Promise<void> => {
+    localStorage.setItem(READ_ALL_TS_KEY, new Date().toISOString())
+    return Promise.resolve()
   },
 
-  markAllAsRead: async (): Promise<void> => {
-    await delay(200)
-    mutableMocks.forEach((n) => {
-      n.is_read = true
-    })
+  computeIsRead: (id: string, createdAt: string): boolean => {
+    const readIds = getReadIds()
+    if (readIds.has(id)) return true
+    const readAllBefore = localStorage.getItem(READ_ALL_TS_KEY)
+    if (readAllBefore && createdAt <= readAllBefore) return true
+    return false
   },
 }
 

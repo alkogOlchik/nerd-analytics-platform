@@ -1,55 +1,41 @@
-import type { ReactNode } from "react"
-import { AlertTriangle, HelpCircle, Star } from "lucide-react"
 import styles from "./styles.module.scss"
 import type { TicketCardProps } from "./types"
-import type { TicketCategory, TicketStatus } from "data/repositories/Tickets"
-
-const CATEGORY_CONFIG: Record<TicketCategory, { label: string; icon: ReactNode; className: string }> = {
-  complaint: {
-    label: "Жалоба",
-    icon: <AlertTriangle size={13} />,
-    className: styles.categoryComplaint,
-  },
-  support: {
-    label: "Помощь",
-    icon: <HelpCircle size={13} />,
-    className: styles.categorySupport,
-  },
-  review: {
-    label: "Отзыв",
-    icon: <Star size={13} />,
-    className: styles.categoryReview,
-  },
-}
+import type { TicketStatus, TicketPriority } from "data/repositories/Tickets"
 
 const STATUS_CONFIG: Record<TicketStatus, { label: string; className: string }> = {
   open: { label: "Открыт", className: styles.statusOpen },
   in_progress: { label: "В обработке", className: styles.statusInProgress },
   closed: { label: "Закрыт", className: styles.statusClosed },
+  reopened: { label: "Переоткрыт", className: styles.statusReopened },
+}
+
+const PRIORITY_CONFIG: Record<TicketPriority, { label: string; className: string }> = {
+  low: { label: "Низкий", className: styles.priorityLow },
+  medium: { label: "Средний", className: styles.priorityMedium },
+  high: { label: "Высокий", className: styles.priorityHigh },
 }
 
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })
 
 export const TicketCard = ({ ticket }: TicketCardProps) => {
-  const category = CATEGORY_CONFIG[ticket.category]
   const status = STATUS_CONFIG[ticket.status]
+  const priority = PRIORITY_CONFIG[ticket.priority]
+  const category = ticket.finalCategory ?? ticket.aiSuggestedCategory
+  const subtitle = category ?? (ticket.keywords.length > 0 ? ticket.keywords.join(", ") : null)
 
   return (
     <div className={styles.card}>
       <div className={styles.cardHeader}>
-        <span className={`${styles.categoryBadge} ${category.className}`}>
-          {category.icon}
-          {category.label}
-        </span>
+        <span className={`${styles.priorityBadge} ${priority.className}`}>{priority.label}</span>
         <span className={`${styles.statusBadge} ${status.className}`}>{status.label}</span>
       </div>
 
-      <h3 className={styles.title}>{ticket.title}</h3>
-      <p className={styles.description}>{ticket.description}</p>
+      <h3 className={styles.title}>{ticket.product}</h3>
+      {subtitle && <p className={styles.description}>{subtitle}</p>}
 
       <div className={styles.cardFooter}>
-        <span className={styles.date}>{formatDate(ticket.createdAt)}</span>
+        <span className={styles.date}>{formatDate(ticket.date)}</span>
       </div>
     </div>
   )
