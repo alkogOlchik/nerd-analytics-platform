@@ -10,6 +10,9 @@ import { NotFoundPage } from "./pages/NotFoundPage"
 import { LoginPage } from "./pages/LoginPage"
 import { RegisterPage } from "./pages/RegisterPage"
 import { AnalyticsPage } from "./pages/AnalyticsPage"
+import { CreateTicketPage } from "./pages/CreateTicketPage"
+import { FeedbackPage } from "./pages/FeedbackPage"
+import { TicketStatusPage } from "./pages/TicketStatusPage"
 import { PrivateRoute } from "./shared/ui/PrivateRoute"
 import { EmployeeRoute } from "./shared/ui/EmployeeRoute"
 
@@ -36,6 +39,18 @@ const appRoutes: RouteObject[] = [
   {
     path: routes.notifications,
     element: <NotificationsPage />
+  },
+  {
+    path: routes.createTicket,
+    element: <CreateTicketPage />
+  },
+  {
+    path: routes.feedback,
+    element: <FeedbackPage />
+  },
+  {
+    path: routes.ticketStatus,
+    element: <TicketStatusPage />
   },
   {
     element: <PrivateRoute />,

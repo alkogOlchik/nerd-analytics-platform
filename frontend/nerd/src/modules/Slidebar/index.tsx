@@ -8,12 +8,15 @@ import Logo from "public/Logo-label.png"
 import IconLogo from "public/logo.png"
 import { LiquidWrapper } from "shared/ui/LiquidWrapper"
 import { useMe } from "domain/Auth/useMe"
+import { useNotifications } from "domain/Notifications"
 
 const SIDEBAR_STORAGE_KEY = "sidebar-compact"
 
 export const Sidebar = ({ onSelect }: SidebarProps) => {
   const location = useLocation()
   const { data: user } = useMe()
+  const { data: notifications = [] } = useNotifications()
+  const unreadCount = notifications.filter((n) => !n.isRead).length
   const [isCompact, setIsCompact] = useState(() => {
     const saved = localStorage.getItem(SIDEBAR_STORAGE_KEY)
     return saved ? JSON.parse(saved) : false
@@ -58,10 +61,10 @@ export const Sidebar = ({ onSelect }: SidebarProps) => {
                   <Icon size={20} />
                   {!isCompact && <span>{item.label}</span>}
                 </div>
-                {!!item.notifications && (
+                {item.id === "notifications" && unreadCount > 0 && (
                   <LiquidWrapper alwaysActive>
                     <div className={`${styles.badge} ${isCompact ? styles.badgeCompact : ""}`}>
-                      {!isCompact && item.notifications}
+                      {!isCompact && unreadCount}
                       {isCompact && <span className={styles.badgeDot} />}
                     </div>
                   </LiquidWrapper>

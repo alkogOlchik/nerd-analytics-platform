@@ -33,6 +33,5 @@ export const NAVIGATION_ITEMS: SidebarItem[] = [
     label: "Уведомления",
     icon: Bell,
     path: routes.notifications,
-    notifications: 3,
   },
 ]
