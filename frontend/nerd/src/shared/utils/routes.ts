@@ -4,8 +4,8 @@ export const routes = {
     register: "/register",
     assistant: "/assistant",
     tickets: "/tickets",
-    favorites: "/favorites",
     notifications: "/notifications",
     profile: "/profile",
+    settings: "/settings",
     analytics: "/analytics",
 } as const
