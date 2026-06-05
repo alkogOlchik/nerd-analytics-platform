@@ -7,14 +7,14 @@ import { NAVIGATION_ITEMS } from "./constants"
 import Logo from "public/Logo-label.png"
 import IconLogo from "public/logo.png"
 import { LiquidWrapper } from "shared/ui/LiquidWrapper"
-import { useMe } from "domain/Auth/useMe"
+// import { useMe } from "domain/Auth/useMe"
 import { useNotifications } from "domain/Notifications"
 
 const SIDEBAR_STORAGE_KEY = "sidebar-compact"
 
 export const Sidebar = ({ onSelect }: SidebarProps) => {
   const location = useLocation()
-  const { data: user } = useMe()
+  // const { data: user } = useMe()
   const { data: notifications = [] } = useNotifications()
   const unreadCount = notifications.filter((n) => !n.isRead).length
   const [isCompact, setIsCompact] = useState(() => {
@@ -42,9 +42,10 @@ export const Sidebar = ({ onSelect }: SidebarProps) => {
       </div>
 
       <nav className={styles.navigation}>
-        {NAVIGATION_ITEMS.filter(
+        {/* {NAVIGATION_ITEMS.filter(
           (item) => item.id !== "analytics" || user?.role === "employee"
-        ).map((item) => {
+        ).map((item) => { */}
+        {NAVIGATION_ITEMS.map((item) => {
           const Icon = item.icon
           const isActive = location.pathname === item.path
 

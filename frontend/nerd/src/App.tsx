@@ -14,7 +14,7 @@ import { CreateTicketPage } from "./pages/CreateTicketPage"
 import { FeedbackPage } from "./pages/FeedbackPage"
 import { TicketStatusPage } from "./pages/TicketStatusPage"
 import { PrivateRoute } from "./shared/ui/PrivateRoute"
-import { EmployeeRoute } from "./shared/ui/EmployeeRoute"
+// import { EmployeeRoute } from "./shared/ui/EmployeeRoute"
 
 const appRoutes: RouteObject[] = [
   {
@@ -52,6 +52,7 @@ const appRoutes: RouteObject[] = [
     path: routes.ticketStatus,
     element: <TicketStatusPage />
   },
+  { path: routes.analytics, element: <AnalyticsPage /> },
   {
     element: <PrivateRoute />,
     children: [
