@@ -1,15 +1,23 @@
 import styles from "./styles.module.scss"
 import type { AnalyticsFilters } from "data/repositories/Analytics"
 
+const PRIORITY_OPTIONS = [
+  { value: "", label: "Все приоритеты" },
+  { value: "low", label: "Низкий" },
+  { value: "medium", label: "Средний" },
+  { value: "high", label: "Высокий" },
+]
+
 interface FilterBarProps {
   filters: AnalyticsFilters
   onChange: (next: Partial<AnalyticsFilters>) => void
   onReset: () => void
   onSave: () => void
   hideDates?: boolean
+  hidePriority?: boolean
 }
 
-export const FilterBar = ({ filters, onChange, onReset, onSave, hideDates }: FilterBarProps) => (
+export const FilterBar = ({ filters, onChange, onReset, onSave, hideDates, hidePriority }: FilterBarProps) => (
   <div className={styles.bar}>
     {!hideDates && (
       <>
@@ -18,8 +26,8 @@ export const FilterBar = ({ filters, onChange, onReset, onSave, hideDates }: Fil
           <input
             type="date"
             className={styles.input}
-            value={filters.from ?? ""}
-            onChange={(e) => onChange({ from: e.target.value || undefined })}
+            value={filters.date_from ?? ""}
+            onChange={(e) => onChange({ date_from: e.target.value || undefined })}
           />
         </label>
         <label className={styles.field}>
@@ -27,8 +35,8 @@ export const FilterBar = ({ filters, onChange, onReset, onSave, hideDates }: Fil
           <input
             type="date"
             className={styles.input}
-            value={filters.to ?? ""}
-            onChange={(e) => onChange({ to: e.target.value || undefined })}
+            value={filters.date_to ?? ""}
+            onChange={(e) => onChange({ date_to: e.target.value || undefined })}
           />
         </label>
       </>
@@ -43,6 +51,20 @@ export const FilterBar = ({ filters, onChange, onReset, onSave, hideDates }: Fil
         onChange={(e) => onChange({ product: e.target.value || undefined })}
       />
     </label>
+    {!hidePriority && (
+      <label className={styles.field}>
+        <span className={styles.fieldLabel}>Приоритет</span>
+        <select
+          className={styles.input}
+          value={filters.priority ?? ""}
+          onChange={(e) => onChange({ priority: e.target.value || undefined })}
+        >
+          {PRIORITY_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+      </label>
+    )}
     <label className={styles.field}>
       <span className={styles.fieldLabel}>Категория</span>
       <input
@@ -55,7 +77,7 @@ export const FilterBar = ({ filters, onChange, onReset, onSave, hideDates }: Fil
     </label>
     <div className={styles.actions}>
       <button className={styles.btnReset} onClick={onReset}>Сбросить</button>
-      <button className={styles.btnSave} onClick={onSave}>Сохранить конфигурацию</button>
+      <button className={styles.btnSave} onClick={onSave}>Сохранить</button>
     </div>
   </div>
 )

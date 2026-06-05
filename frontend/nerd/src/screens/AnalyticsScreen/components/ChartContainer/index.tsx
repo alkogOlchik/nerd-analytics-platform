@@ -8,6 +8,7 @@ interface ChartContainerProps {
   children: ReactNode
   containerRef?: RefObject<HTMLDivElement | null>
   minHeight?: number
+  wide?: boolean
 }
 
 export const ChartContainer = ({
@@ -17,8 +18,9 @@ export const ChartContainer = ({
   children,
   containerRef,
   minHeight = 280,
+  wide,
 }: ChartContainerProps) => (
-  <div className={styles.card}>
+  <div className={`${styles.card}${wide ? ` ${styles.cardWide}` : ""}`}>
     <h3 className={styles.title}>{title}</h3>
     <div className={styles.body} style={{ minHeight }} ref={containerRef}>
       {isLoading && (

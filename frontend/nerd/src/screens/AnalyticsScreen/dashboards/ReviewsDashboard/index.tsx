@@ -1,8 +1,9 @@
 import { useRef } from "react"
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  LineChart, Line, Legend,
 } from "recharts"
-import { useReviewsSummary, useReviewsKeywords } from "domain/Analytics"
+import { useReviewsSummary, useReviewsKeywords, useReviewsDynamics } from "domain/Analytics"
 import { useAnalyticsFilters } from "../../hooks/useAnalyticsFilters"
 import { FilterBar } from "../../components/FilterBar"
 import { KpiCard } from "../../components/KpiCard"
@@ -15,12 +16,19 @@ export const ReviewsDashboard = () => {
   const { filters, updateFilters, resetFilters, saveConfig } = useAnalyticsFilters("reviews")
   const { data: summary, isLoading: summaryLoading, error: summaryError } = useReviewsSummary(filters)
   const { data: keywords, isLoading: keywordsLoading } = useReviewsKeywords(filters)
+  const { data: dynamics, isLoading: dynLoading, error: dynError } = useReviewsDynamics(filters)
 
   const sentimentRef = useRef<HTMLDivElement>(null)
+  const dynamicsRef = useRef<HTMLDivElement>(null)
+
+  const handleExportSvg = (ref: React.RefObject<HTMLDivElement | null>, name: string) => {
+    const svg = ref.current?.querySelector("svg")
+    if (svg) exportPng(svg as SVGElement, name)
+  }
 
   return (
     <div className={styles.dashboard}>
-      <FilterBar filters={filters} onChange={updateFilters} onReset={resetFilters} onSave={saveConfig} />
+      <FilterBar filters={filters} onChange={updateFilters} onReset={resetFilters} onSave={saveConfig} hidePriority />
 
       <div className={styles.kpiRow}>
         <KpiCard
@@ -41,6 +49,35 @@ export const ReviewsDashboard = () => {
       </div>
 
       <ChartContainer
+        title="Тональность по дням"
+        isLoading={dynLoading}
+        error={dynError}
+        containerRef={dynamicsRef}
+      >
+        <div className={styles.chartWithExport}>
+          <ExportToolbar
+            onExportCsv={() => exportCsv(dynamics?.items ?? [], "reviews-dynamics")}
+            onExportPng={() => handleExportSvg(dynamicsRef, "reviews-dynamics")}
+            onExportPdf={() => dynamicsRef.current && exportPdf(dynamicsRef.current, "Тональность по дням")}
+          />
+          <ResponsiveContainer width="100%" height={240}>
+            <LineChart data={dynamics?.items ?? []} margin={{ left: 0, right: 16, top: 8 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+              <XAxis dataKey="date" tick={{ fill: "#888", fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: "#888", fontSize: 12 }} axisLine={false} tickLine={false} />
+              <Tooltip
+                contentStyle={{ background: "#1e1b2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8 }}
+                labelStyle={{ color: "#fff" }}
+              />
+              <Legend formatter={(value) => <span style={{ color: "#aaa", fontSize: 12 }}>{value}</span>} />
+              <Line type="monotone" dataKey="positiveCount" name="Позитивные" stroke="#4ade80" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+              <Line type="monotone" dataKey="negativeCount" name="Негативные" stroke="#f87171" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </ChartContainer>
+
+      <ChartContainer
         title="Распределение тональности"
         isLoading={summaryLoading}
         error={summaryError}
@@ -49,10 +86,10 @@ export const ReviewsDashboard = () => {
         <div className={styles.chartWithExport}>
           <ExportToolbar
             onExportCsv={() => exportCsv(summary?.sentimentDistribution ?? [], "reviews-sentiment")}
-            onExportPng={() => { const svg = sentimentRef.current?.querySelector("svg"); if (svg) exportPng(svg as SVGElement, "reviews-sentiment") }}
+            onExportPng={() => handleExportSvg(sentimentRef, "reviews-sentiment")}
             onExportPdf={() => sentimentRef.current && exportPdf(sentimentRef.current, "Тональность отзывов")}
           />
-          <ResponsiveContainer width="100%" height={240}>
+          <ResponsiveContainer width="100%" height={220}>
             <BarChart data={summary?.sentimentDistribution} margin={{ left: 0, right: 16 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
               <XAxis dataKey="key" tick={{ fill: "#aaa", fontSize: 12 }} axisLine={false} tickLine={false} />
