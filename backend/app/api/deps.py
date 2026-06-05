@@ -11,6 +11,7 @@ from backend.app.models.user import Employee
 from backend.app.services import auth_service
 
 security = HTTPBearer()
+optional_security = HTTPBearer(auto_error=False)
 
 _ANALYST_ROLES = {
     EmployeeRole.analyst.value,
@@ -63,6 +64,15 @@ async def get_current_user(
         full_name=user.full_name,
         employee_role=employee_role,
     )
+
+
+async def get_optional_current_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(optional_security),
+    db: AsyncSession = Depends(get_db),
+) -> CurrentUser | None:
+    if credentials is None:
+        return None
+    return await get_current_user(credentials, db)
 
 
 async def require_employee(current_user: CurrentUser = Depends(get_current_user)) -> CurrentUser:
