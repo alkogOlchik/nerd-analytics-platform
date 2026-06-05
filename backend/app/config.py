@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     LOCAL_UPLOAD_DIR: str = "backend/storage/uploads"
     FILE_UPLOAD_MAX_BYTES: int = 10 * 1024 * 1024
 
+    # Регистрация сотрудника: секрет в body или bootstrap (если employees пуста)
+    ADMIN_REGISTRATION_SECRET: str = ""
+
     @property
     def sync_database_url(self) -> str:
         return self.DATABASE_URL.replace("+asyncpg", "")

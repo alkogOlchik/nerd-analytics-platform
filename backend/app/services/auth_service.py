@@ -5,14 +5,14 @@ import bcrypt
 import httpx
 from fastapi import HTTPException, status
 from jose import JWTError, jwt
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.config import get_settings
-from backend.app.models.enums import UserRole
+from backend.app.models.enums import EmployeeRole, UserRole
 from backend.app.models.user import Client, Employee
 from backend.app.schemas.auth import AdminLoginResponse, NotificationPreferencesResponse, TokenResponse
-from backend.app.schemas.user import ClientRegister
+from backend.app.schemas.user import ClientRegister, EmployeeRegister, ProfileUpdate, UserMeResponse
 
 settings = get_settings()
 ALGORITHM = "HS256"
@@ -88,6 +88,65 @@ async def register_client(db: AsyncSession, data: ClientRegister) -> Client:
     return client
 
 
+def _assert_admin_registration_allowed(
+    *,
+    employee_count: int,
+    registration_secret: str | None,
+    actor_role: UserRole | None,
+    actor_employee_role: str | None,
+) -> None:
+    if employee_count == 0:
+        return
+    if (
+        actor_role == UserRole.employee
+        and actor_employee_role == EmployeeRole.super_admin.value
+    ):
+        return
+    if settings.ADMIN_REGISTRATION_SECRET and registration_secret == settings.ADMIN_REGISTRATION_SECRET:
+        return
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Admin registration not allowed",
+    )
+
+
+async def register_employee(
+    db: AsyncSession,
+    data: EmployeeRegister,
+    *,
+    actor_role: UserRole | None = None,
+    actor_employee_role: str | None = None,
+) -> Employee:
+    employee_count = await db.scalar(select(func.count()).select_from(Employee)) or 0
+    _assert_admin_registration_allowed(
+        employee_count=employee_count,
+        registration_secret=data.registration_secret,
+        actor_role=actor_role,
+        actor_employee_role=actor_employee_role,
+    )
+
+    existing = await db.execute(select(Employee).where(Employee.username == data.username))
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already exists")
+
+    role = data.role.value
+    if employee_count == 0:
+        role = EmployeeRole.super_admin.value
+
+    employee = Employee(
+        username=data.username,
+        full_name=data.full_name,
+        password_hash=hash_password(data.password),
+        status="active",
+        role=role,
+        sec_level=1,
+    )
+    db.add(employee)
+    await db.commit()
+    await db.refresh(employee)
+    return employee
+
+
 async def login(db: AsyncSession, username: str, password: str) -> TokenResponse:
     result = await db.execute(select(Client).where(Client.username == username))
     client = result.scalar_one_or_none()
@@ -139,6 +198,68 @@ async def refresh_tokens(refresh_token: str) -> TokenResponse:
 async def logout(refresh_token: str | None) -> None:
     if refresh_token:
         _revoked_refresh_tokens.add(refresh_token)
+
+
+def build_user_me(user: Client | Employee, role: UserRole) -> UserMeResponse:
+    employee_role: str | None = None
+    if role == UserRole.employee:
+        employee_role = getattr(user, "role", None)
+        return UserMeResponse(
+            id=user.id,
+            username=user.username,
+            role=role,
+            employee_role=employee_role,
+            full_name=user.full_name,
+        )
+    return UserMeResponse(
+        id=user.id,
+        username=user.username,
+        role=role,
+        email=user.email,
+        full_name=user.full_name,
+        age=user.age,
+        gender=user.gender,
+        city=user.city,
+    )
+
+
+async def update_profile(
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    role: UserRole,
+    data: ProfileUpdate,
+) -> UserMeResponse:
+    user = await get_user_by_id(db, user_id, role)
+    if data.full_name is not None:
+        user.full_name = data.full_name
+    if role == UserRole.client:
+        if data.city is not None:
+            user.city = data.city
+        if data.age is not None:
+            user.age = data.age
+        if data.gender is not None:
+            user.gender = data.gender.value
+    await db.commit()
+    await db.refresh(user)
+    return build_user_me(user, role)
+
+
+async def change_password(
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    role: UserRole,
+    *,
+    current_password: str,
+    new_password: str,
+) -> None:
+    user = await get_user_by_id(db, user_id, role)
+    if not verify_password(current_password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid current password",
+        )
+    user.password_hash = hash_password(new_password)
+    await db.commit()
 
 
 async def get_user_by_id(
