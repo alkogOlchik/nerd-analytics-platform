@@ -2,8 +2,9 @@ import { useRef, useState } from "react"
 import {
   PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  LineChart, Line,
 } from "recharts"
-import { useTicketSummary } from "domain/Analytics"
+import { useTicketSummary, useTicketTimeline } from "domain/Analytics"
 import { useAnalyticsFilters } from "../../hooks/useAnalyticsFilters"
 import { FilterBar } from "../../components/FilterBar"
 import { KpiCard } from "../../components/KpiCard"
@@ -17,7 +18,9 @@ const COLORS = ["#7c5cff", "#4ade80", "#facc15", "#f87171", "#60a5fa", "#f472b6"
 export const OverviewDashboard = () => {
   const { filters, updateFilters, resetFilters, saveConfig } = useAnalyticsFilters("overview")
   const { data, isLoading, error } = useTicketSummary(filters)
+  const { data: timeline, isLoading: tlLoading, error: tlError } = useTicketTimeline(filters)
 
+  const timelineRef = useRef<HTMLDivElement>(null)
   const statusRef = useRef<HTMLDivElement>(null)
   const productRef = useRef<HTMLDivElement>(null)
   const categoryRef = useRef<HTMLDivElement>(null)
@@ -25,6 +28,7 @@ export const OverviewDashboard = () => {
   const [hiddenStatus, setHiddenStatus] = useState<Set<string>>(new Set())
 
   const openCount = data?.byStatus.find((s) => s.key === "open")?.count ?? 0
+  const totalTickets = data?.byStatus.reduce((sum, s) => sum + s.count, 0) ?? 0
 
   const toggleStatus = (key: string) =>
     setHiddenStatus((prev) => {
@@ -43,13 +47,36 @@ export const OverviewDashboard = () => {
       <FilterBar filters={filters} onChange={updateFilters} onReset={resetFilters} onSave={saveConfig} />
 
       <div className={styles.kpiRow}>
+        <KpiCard label="Всего тикетов" value={isLoading ? "—" : totalTickets} />
         <KpiCard label="Открытые тикеты" value={isLoading ? "—" : openCount} highlight={openCount > 0 ? "warning" : "success"} />
-        <KpiCard label="Всего статусов" value={isLoading ? "—" : data?.byStatus.length ?? 0} />
         <KpiCard label="Продуктов" value={isLoading ? "—" : data?.byProduct.length ?? 0} />
-        <KpiCard label="Категорий" value={isLoading ? "—" : data?.byCategory.length ?? 0} />
+        <KpiCard label="Категорий ИИ" value={isLoading ? "—" : data?.byCategory.length ?? 0} />
       </div>
 
       <div className={styles.chartsGrid}>
+        <ChartContainer title="Динамика обращений" isLoading={tlLoading} error={tlError} containerRef={timelineRef} wide>
+          <div className={styles.chartWithExport}>
+            <ExportToolbar
+              onExportCsv={() => exportCsv(timeline?.items ?? [], "tickets-timeline")}
+              onExportPng={() => handleExportSvg(timelineRef, "tickets-timeline")}
+              onExportPdf={() => timelineRef.current && exportPdf(timelineRef.current, "Динамика обращений")}
+            />
+            <ResponsiveContainer width="100%" height={240}>
+              <LineChart data={timeline?.items ?? []} margin={{ left: 0, right: 16, top: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                <XAxis dataKey="date" tick={{ fill: "#888", fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: "#888", fontSize: 12 }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  contentStyle={{ background: "#1e1b2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8 }}
+                  labelStyle={{ color: "#fff" }}
+                  itemStyle={{ color: "#c4b5fd" }}
+                />
+                <Line type="monotone" dataKey="count" name="Тикеты" stroke="#7c5cff" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </ChartContainer>
+
         <ChartContainer title="Распределение по статусам" isLoading={isLoading} error={error} containerRef={statusRef}>
           <div className={styles.chartWithExport}>
             <ExportToolbar
@@ -101,7 +128,7 @@ export const OverviewDashboard = () => {
               <BarChart data={data?.byProduct} layout="vertical" margin={{ left: 16, right: 16 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                 <XAxis type="number" tick={{ fill: "#888", fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis dataKey="key" type="category" width={120} tick={{ fill: "#aaa", fontSize: 12 }} axisLine={false} tickLine={false} />
+                <YAxis dataKey="key" type="category" width={130} tick={{ fill: "#aaa", fontSize: 12 }} axisLine={false} tickLine={false} />
                 <Tooltip
                   contentStyle={{ background: "#1e1b2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8 }}
                   labelStyle={{ color: "#fff" }}
@@ -113,7 +140,7 @@ export const OverviewDashboard = () => {
           </div>
         </ChartContainer>
 
-        <ChartContainer title="Распределение по категориям" isLoading={isLoading} error={error} containerRef={categoryRef}>
+        <ChartContainer title="Распределение по категориям ИИ" isLoading={isLoading} error={error} containerRef={categoryRef}>
           <div className={styles.chartWithExport}>
             <ExportToolbar
               onExportCsv={() => exportCsv(data?.byCategory ?? [], "tickets-by-category")}
@@ -124,7 +151,7 @@ export const OverviewDashboard = () => {
               <BarChart data={data?.byCategory} layout="vertical" margin={{ left: 16, right: 16 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                 <XAxis type="number" tick={{ fill: "#888", fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis dataKey="key" type="category" width={120} tick={{ fill: "#aaa", fontSize: 12 }} axisLine={false} tickLine={false} />
+                <YAxis dataKey="key" type="category" width={130} tick={{ fill: "#aaa", fontSize: 12 }} axisLine={false} tickLine={false} />
                 <Tooltip
                   contentStyle={{ background: "#1e1b2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8 }}
                   labelStyle={{ color: "#fff" }}

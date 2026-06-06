@@ -2,13 +2,18 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  max-width: 720px;
 }
 
 .kpiRow {
   display: flex;
   gap: 16px;
   flex-wrap: wrap;
+}
+
+.chartsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 16px;
 }
 
 .chartWithExport {
