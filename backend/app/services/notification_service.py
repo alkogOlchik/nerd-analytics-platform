@@ -2,7 +2,7 @@ import logging
 import uuid
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.db.session import AsyncSessionLocal
@@ -24,6 +24,7 @@ async def _create_and_send(
             ticket_id=uuid.UUID(ticket_id),
             type=notification_type,
             status="pending",
+            is_read=False,
         )
         db.add(notification)
         await db.commit()
@@ -90,3 +91,32 @@ async def get_notification(
     if role == UserRole.client and notification.client_id != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
     return notification
+
+
+async def update_notification(
+    db: AsyncSession,
+    notification_id: uuid.UUID,
+    user_id: uuid.UUID,
+    role: UserRole,
+    *,
+    is_read: bool | None,
+) -> Notification:
+    notification = await get_notification(db, notification_id, user_id, role)
+    if is_read is not None:
+        notification.is_read = is_read
+    await db.commit()
+    await db.refresh(notification)
+    return notification
+
+
+async def mark_all_read(
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    role: UserRole,
+) -> int:
+    stmt = update(Notification).values(is_read=True).where(Notification.is_read.is_(False))
+    if role == UserRole.client:
+        stmt = stmt.where(Notification.client_id == user_id)
+    result = await db.execute(stmt)
+    await db.commit()
+    return int(result.rowcount or 0)

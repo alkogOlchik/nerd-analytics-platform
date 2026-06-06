@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     S3_PREFIX: str = "uploads"
     LOCAL_UPLOAD_DIR: str = "backend/storage/uploads"
     FILE_UPLOAD_MAX_BYTES: int = 10 * 1024 * 1024
+    ADMIN_REGISTRATION_SECRET: str = ""
 
     @property
     def sync_database_url(self) -> str:

@@ -5,14 +5,14 @@ import bcrypt
 import httpx
 from fastapi import HTTPException, status
 from jose import JWTError, jwt
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.config import get_settings
-from backend.app.models.enums import UserRole
+from backend.app.models.enums import EmployeeRole, UserRole
 from backend.app.models.user import Client, Employee
 from backend.app.schemas.auth import AdminLoginResponse, NotificationPreferencesResponse, TokenResponse
-from backend.app.schemas.user import ClientRegister
+from backend.app.schemas.user import ClientRegister, EmployeeRegister, ProfileUpdate, UserMeResponse
 
 settings = get_settings()
 ALGORITHM = "HS256"
@@ -100,6 +100,94 @@ async def login(db: AsyncSession, username: str, password: str) -> TokenResponse
         return create_tokens(employee.id, UserRole.employee)
 
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+
+
+async def register_employee(
+    db: AsyncSession,
+    data: EmployeeRegister,
+    *,
+    actor_role: UserRole | None = None,
+    actor_employee_role: str | None = None,
+) -> Employee:
+    employee_count = await db.scalar(select(func.count()).select_from(Employee)) or 0
+
+    existing = await db.execute(select(Employee).where(Employee.username == data.username))
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already exists")
+
+    role = EmployeeRole.super_admin.value if employee_count == 0 else data.role.value
+    employee = Employee(
+        username=data.username,
+        full_name=data.full_name,
+        password_hash=hash_password(data.password),
+        status="active",
+        role=role,
+        sec_level=1,
+    )
+    db.add(employee)
+    await db.commit()
+    await db.refresh(employee)
+    return employee
+
+
+def build_user_me(user: Client | Employee, role: UserRole) -> UserMeResponse:
+    if role == UserRole.employee:
+        return UserMeResponse(
+            id=user.id,
+            username=user.username,
+            role=role,
+            employee_role=getattr(user, "role", None),
+            full_name=user.full_name,
+        )
+    return UserMeResponse(
+        id=user.id,
+        username=user.username,
+        role=role,
+        email=user.email,
+        full_name=user.full_name,
+        age=user.age,
+        gender=user.gender,
+        city=user.city,
+    )
+
+
+async def update_profile(
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    role: UserRole,
+    data: ProfileUpdate,
+) -> UserMeResponse:
+    user = await get_user_by_id(db, user_id, role)
+    if data.full_name is not None:
+        user.full_name = data.full_name
+    if role == UserRole.client:
+        if data.city is not None:
+            user.city = data.city
+        if data.age is not None:
+            user.age = data.age
+        if data.gender is not None:
+            user.gender = data.gender.value
+    await db.commit()
+    await db.refresh(user)
+    return build_user_me(user, role)
+
+
+async def change_password(
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    role: UserRole,
+    *,
+    current_password: str,
+    new_password: str,
+) -> None:
+    user = await get_user_by_id(db, user_id, role)
+    if not verify_password(current_password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid current password",
+        )
+    user.password_hash = hash_password(new_password)
+    await db.commit()
 
 
 async def login_employee(db: AsyncSession, username: str, password: str) -> AdminLoginResponse:
