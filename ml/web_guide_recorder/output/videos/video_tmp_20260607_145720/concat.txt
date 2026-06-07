@@ -1,0 +1,7 @@
+file /Users/mikhail/Documents/prj/new_merge/nerd-analytics-platform/ml/web_guide_recorder/output/videos/video_tmp_20260607_145720/seg_000_url.mp4
+file /Users/mikhail/Documents/prj/new_merge/nerd-analytics-platform/ml/web_guide_recorder/output/videos/video_tmp_20260607_145720/seg_001.mp4
+file /Users/mikhail/Documents/prj/new_merge/nerd-analytics-platform/ml/web_guide_recorder/output/videos/video_tmp_20260607_145720/seg_002.mp4
+file /Users/mikhail/Documents/prj/new_merge/nerd-analytics-platform/ml/web_guide_recorder/output/videos/video_tmp_20260607_145720/seg_003.mp4
+file /Users/mikhail/Documents/prj/new_merge/nerd-analytics-platform/ml/web_guide_recorder/output/videos/video_tmp_20260607_145720/seg_004.mp4
+file /Users/mikhail/Documents/prj/new_merge/nerd-analytics-platform/ml/web_guide_recorder/output/videos/video_tmp_20260607_145720/seg_005.mp4
+file /Users/mikhail/Documents/prj/new_merge/nerd-analytics-platform/ml/web_guide_recorder/output/videos/video_tmp_20260607_145720/seg_006.mp4
