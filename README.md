@@ -18,7 +18,7 @@ frontend (React/Vite, :80)
                   ├─ Kafka :9092
                   └─ MinIO S3 :9000/:9001
 
-ml/ (вне Docker, рядом с Ollama/GPU)
+ml/ (вне Docker, рядом с Ollama/GPU Apple)
     ├─ agent :8090       — RAG + браузер (gemma4)
     └─ web_guide_recorder :8091 — запись гайдов
 ```
