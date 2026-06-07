@@ -26,8 +26,8 @@ logger = logging.getLogger(__name__)
 
 SUPPORTED_EXTS = {".md", ".markdown", ".txt", ".rst"}
 DEFAULT_SOURCE = Path(__file__).resolve().parents[2] / "docs"
-CHUNK_SIZE = 1000
-CHUNK_OVERLAP = 150
+CHUNK_SIZE = 500
+CHUNK_OVERLAP = 80
 
 
 def _iter_files(source: Path) -> Iterable[Path]:
@@ -97,9 +97,30 @@ def index_directory(
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=CHUNK_SIZE,
         chunk_overlap=CHUNK_OVERLAP,
-        separators=["\n\n", "\n", ". ", " ", ""],
+        separators=["\n## ", "\n### ", "\n\n", "\n", ". ", " ", ""],
     )
-    chunks = splitter.split_documents(documents)
+    raw_chunks = splitter.split_documents(documents)
+
+    # Prepend the document title (first H1 line) to every chunk so that
+    # the product name is present in every chunk embedding, improving
+    # recall on short queries like "NerdShop что это?".
+    title_cache: dict[str, str] = {}
+    for doc in documents:
+        src = doc.metadata.get("source", "")
+        first_line = doc.page_content.lstrip().split("\n")[0].lstrip("#").strip()
+        if first_line:
+            title_cache[src] = first_line
+
+    chunks: list[Document] = []
+    for chunk in raw_chunks:
+        src = chunk.metadata.get("source", "")
+        title = title_cache.get(src, "")
+        if title and not chunk.page_content.startswith(title):
+            chunk = Document(
+                page_content=f"[{title}]\n{chunk.page_content}",
+                metadata=chunk.metadata,
+            )
+        chunks.append(chunk)
     if not chunks:
         return {"ok": False, "error": "Splitting produced 0 chunks", "indexed_chunks": 0}
 
