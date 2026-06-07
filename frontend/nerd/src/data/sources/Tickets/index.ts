@@ -9,9 +9,17 @@ import type {
   PatchPriorityRequest,
   StatusHistoryDto,
   CommentDto,
+  GuestTicketCreateRequest,
+  GuestTicketResponse,
+  GuestTrackResponse,
 } from "./types"
 
 export const ticketsSource = {
+  createGuestTicket: (req: GuestTicketCreateRequest) =>
+    apiClient.post<GuestTicketResponse>("/tickets/guest", req).then((r) => r.data),
+
+  trackGuestTicket: (token: string) =>
+    apiClient.get<GuestTrackResponse>(`/tickets/track/${token}`).then((r) => r.data),
   getTickets: (params?: {
     status?: string
     priority?: string
@@ -69,4 +77,7 @@ export type {
   PatchPriorityRequest,
   StatusHistoryDto,
   CommentDto,
+  GuestTicketCreateRequest,
+  GuestTicketResponse,
+  GuestTrackResponse,
 }

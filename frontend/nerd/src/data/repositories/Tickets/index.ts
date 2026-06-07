@@ -1,7 +1,15 @@
 import { ticketsSource } from "data/sources/Tickets"
 import type { TicketDto, StatusHistoryDto } from "data/sources/Tickets"
 import { MOCK_TICKETS } from "./mocks"
-import type { Ticket, CreateTicketInput, UpdateTicketInput, StatusHistoryEntry } from "./types"
+import type {
+  Ticket,
+  CreateTicketInput,
+  UpdateTicketInput,
+  StatusHistoryEntry,
+  GuestTicketInput,
+  GuestTicketResult,
+  GuestTrackResult,
+} from "./types"
 
 const IS_MOCK = import.meta.env.VITE_IS_MOCK === "true"
 
@@ -40,6 +48,22 @@ const mapTicket = (dto: TicketDto): Ticket => ({
 const mockStore: Ticket[] = [...MOCK_TICKETS]
 
 const mockRepository = {
+  createGuestTicket: async (input: GuestTicketInput): Promise<GuestTicketResult> => {
+    await delay(300)
+    return { ticketId: `guest-ticket-${Date.now()}`, guestToken: `mock-token-${Date.now()}`, status: "open" }
+  },
+
+  trackGuestTicket: async (_token: string): Promise<GuestTrackResult> => {
+    await delay(200)
+    return {
+      ticketId: "mock-ticket-id",
+      status: "open",
+      statusUpdatedAt: null,
+      product: "веб-сервис",
+      createdAt: new Date().toISOString(),
+    }
+  },
+
   getTickets: async (): Promise<Ticket[]> => {
     await delay(300)
     return [...mockStore]
@@ -124,6 +148,27 @@ const mockRepository = {
 }
 
 const realRepository = {
+  createGuestTicket: async (input: GuestTicketInput): Promise<GuestTicketResult> => {
+    const dto = await ticketsSource.createGuestTicket({
+      product: input.product,
+      priority: input.priority,
+      message: input.message,
+      guest_email: input.guestEmail,
+    })
+    return { ticketId: String(dto.ticket_id), guestToken: dto.guest_token, status: dto.status }
+  },
+
+  trackGuestTicket: async (token: string): Promise<GuestTrackResult> => {
+    const dto = await ticketsSource.trackGuestTicket(token)
+    return {
+      ticketId: String(dto.ticket_id),
+      status: dto.status,
+      statusUpdatedAt: dto.status_updated_at,
+      product: dto.product,
+      createdAt: dto.created_at,
+    }
+  },
+
   getTickets: async (params?: { status?: string; priority?: string; product?: string }): Promise<Ticket[]> => {
     const dtos = await ticketsSource.getTickets(params)
     return dtos.map(mapTicket)
@@ -184,4 +229,15 @@ const realRepository = {
 
 export const ticketsRepository = IS_MOCK ? mockRepository : realRepository
 
-export type { Ticket, TicketStatus, TicketPriority, TicketProduct, CreateTicketInput, UpdateTicketInput, StatusHistoryEntry } from "./types"
+export type {
+  Ticket,
+  TicketStatus,
+  TicketPriority,
+  TicketProduct,
+  CreateTicketInput,
+  UpdateTicketInput,
+  StatusHistoryEntry,
+  GuestTicketInput,
+  GuestTicketResult,
+  GuestTrackResult,
+} from "./types"

@@ -14,60 +14,35 @@ import { CreateTicketPage } from "./pages/CreateTicketPage"
 import { FeedbackPage } from "./pages/FeedbackPage"
 import { TicketStatusPage } from "./pages/TicketStatusPage"
 import { MyReviewsPage } from "./pages/MyReviewsPage"
+import { GuestTicketTrackPage } from "./pages/GuestTicketTrackPage"
 import { PrivateRoute } from "./shared/ui/PrivateRoute"
 // import { EmployeeRoute } from "./shared/ui/EmployeeRoute"
 
 const appRoutes: RouteObject[] = [
-  {
-    path: routes.login,
-    element: <LoginPage />,
-  },
-  {
-    path: routes.register,
-    element: <RegisterPage />,
-  },
-  {
-    path: routes.main,
-    element: <MainPage />,
-  },
-  {
-    path: routes.assistant,
-    element: <AssistantPage />,
-  },
-  { path: routes.tickets,
-    element: <TicketsPage />
-  },
-  {
-    path: routes.notifications,
-    element: <NotificationsPage />
-  },
-  {
-    path: routes.createTicket,
-    element: <CreateTicketPage />
-  },
-  {
-    path: routes.feedback,
-    element: <FeedbackPage />
-  },
-  {
-    path: routes.ticketStatus,
-    element: <TicketStatusPage />
-  },
-  {
-    path: routes.myReviews,
-    element: <MyReviewsPage />
-  },
-  { path: routes.analytics, element: <AnalyticsPage /> },
+  // Страницы авторизации (всегда доступны)
+  { path: routes.login, element: <LoginPage /> },
+  { path: routes.register, element: <RegisterPage /> },
+
+  // Публичные страницы
+  { path: routes.main, element: <MainPage /> },
+  { path: routes.assistant, element: <AssistantPage /> },
+
+  // Создание обращения: доступно без входа, запрашивает email у гостей
+  { path: routes.createTicket, element: <CreateTicketPage /> },
+
+  // Отслеживание гостевого обращения по временному токену
+  { path: routes.guestTicketTrack, element: <GuestTicketTrackPage /> },
+
+  // Приватные страницы — только для авторизованных
   {
     element: <PrivateRoute />,
     children: [
+      { path: routes.tickets, element: <TicketsPage /> },
+      { path: routes.notifications, element: <NotificationsPage /> },
+      { path: routes.ticketStatus, element: <TicketStatusPage /> },
+      { path: routes.feedback, element: <FeedbackPage /> },
+      { path: routes.myReviews, element: <MyReviewsPage /> },
       // TODO: вернуть EmployeeRoute когда роль admin/employee будет стабильно приходить с бека
-      // {
-      //   element: <EmployeeRoute />,
-      //   children: [
-      //     { path: routes.analytics, element: <AnalyticsPage /> },
-      //   ],
-      // },
       { path: routes.analytics, element: <AnalyticsPage /> },
       { path: routes.profile, element: <ProfilePage /> },
       { path: routes.settings, element: <SettingsPage /> },
