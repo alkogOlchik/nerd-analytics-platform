@@ -28,7 +28,7 @@ class Settings:
         "./chroma_db",
     )
     chroma_collection_name: str = os.getenv("CHROMA_COLLECTION_NAME", "documents")
-    rag_top_k: int = int(os.getenv("RAG_TOP_K", "4"))
+    rag_top_k: int = int(os.getenv("RAG_TOP_K", "6"))
     ollama_embeddings_model: str = os.getenv(
         "OLLAMA_EMBEDDINGS_MODEL",
         "nomic-embed-text",
