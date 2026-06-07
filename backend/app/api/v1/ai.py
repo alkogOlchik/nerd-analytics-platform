@@ -21,6 +21,7 @@ from backend.app.schemas.ai import (
     ReviewClassificationResponse,
     TicketClassificationResponse,
 )
+from backend.app.schemas.analytics_ai import AnalyticsChatRequest, AnalyticsChatResponse
 from backend.app.schemas.ticket import TicketResponse
 from backend.app.schemas.ticket_extended import TicketEscalateResponse
 from backend.app.services import ai_service, s3_service
@@ -223,3 +224,17 @@ async def delete_file(
     await s3_service.delete_file(cf.s3_key)
     await db.delete(cf)
     await db.commit()
+
+
+@router.post("/analytics-chat", response_model=AnalyticsChatResponse)
+async def analytics_chat(
+    data: AnalyticsChatRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    """AI-ассистент для дашборда аналитики с tool calling (query_metric, detect_anomalies, create_ticket и UI-команды)."""
+    from backend.app.api.deps import require_employee
+
+    from backend.app.services.analytics_ai_service import analytics_chat as _analytics_chat
+
+    return await _analytics_chat(db, current_user.id, data)

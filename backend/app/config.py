@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     GITHUB_CLIENT_SECRET: str = ""
     OAUTH_REDIRECT_URI: str = "http://127.0.0.1:8001/auth/oauth/callback"
 
+    ANTHROPIC_API_KEY: str = ""
+
     S3_BUCKET_NAME: str = "nerd-files"
     S3_REGION: str = "us-east-1"
     S3_ACCESS_KEY: str = "minioadmin"

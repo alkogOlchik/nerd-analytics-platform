@@ -8,6 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from backend.app.models.base import Base, TimestampMixin
 
 
+
 class Ticket(Base):
     __tablename__ = "tickets"
 
@@ -20,6 +21,9 @@ class Ticket(Base):
     )
     title: Mapped[str | None] = mapped_column(String(256), nullable=True)
     product: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    product_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("products.id"), nullable=True, index=True
+    )
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="принято")
     priority: Mapped[str] = mapped_column(String(16), nullable=False, default="medium")
     user_priority: Mapped[str | None] = mapped_column(String(16), nullable=True)
@@ -42,6 +46,7 @@ class Ticket(Base):
 
     client = relationship("Client", back_populates="tickets")
     responsible = relationship("Employee", back_populates="assigned_tickets")
+    product_ref = relationship("Product", back_populates="tickets", lazy="selectin", foreign_keys="[Ticket.product_id]")
     attachments = relationship("Attachment", back_populates="ticket", lazy="selectin")
     notifications = relationship("Notification", back_populates="ticket", lazy="selectin")
     reviews = relationship("Review", back_populates="ticket", lazy="selectin")

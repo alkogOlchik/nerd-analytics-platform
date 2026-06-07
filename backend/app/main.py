@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.app.api.v1 import ai, analytics, auth, notifications, reviews, tickets
+from backend.app.api.v1 import ai, analytics, auth, notifications, products, reviews, sla_rules, tickets
 from backend.app.services import analytics_service, notification_service
 from backend.core.kafka.consumer import event_consumer
 from backend.core.kafka.producer import event_producer
@@ -41,9 +41,15 @@ async def lifespan(app: FastAPI):
     except (asyncio.TimeoutError, Exception) as exc:
         logger.warning("Kafka unavailable, running without event bus: %s", exc)
         await _stop_kafka()
+
+    from backend.app.services.sla_service import start_scheduler
+
+    sla_scheduler = start_scheduler()
     try:
         yield
     finally:
+        if sla_scheduler:
+            sla_scheduler.shutdown(wait=False)
         await _stop_kafka()
 
 
@@ -63,6 +69,8 @@ app.include_router(reviews.router)
 app.include_router(notifications.router)
 app.include_router(analytics.router)
 app.include_router(ai.router)
+app.include_router(products.router)
+app.include_router(sla_rules.router)
 
 
 @app.get("/health")
