@@ -30,3 +30,4 @@ class AgentState(TypedDict, total=False):
     iterations: int
     llm_model_override: Optional[str]
     final_answer: Optional[str]
+    escalate_to_operator: Optional[bool]

@@ -98,12 +98,15 @@ async def _run_query(query: str, model: LlmModel) -> Dict[str, Any]:
         observations,
         len(answer),
     )
-    return {
+    response: Dict[str, Any] = {
         "answer": answer,
         "model": model.value,
         "iterations": iterations,
         "observations_count": observations,
     }
+    if result.get("escalate_to_operator"):
+        response["escalate_to_operator"] = True
+    return response
 
 
 async def _run_web_guide(req: RecordWebGuideRequest) -> Dict[str, Any]:

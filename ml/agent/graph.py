@@ -56,6 +56,7 @@ SYSTEM_PROMPT = """Ты — ИИ-помощник платформы «Нёрд-
 - `rag_search(query, top_k)` — поиск по базе знаний продукта. Используй при любом вопросе о продукте, прежде чем отвечать.
 - `run_analytics(task_description)` — генерирует и запускает Python/numpy код для численного анализа. Используй для расчётов метрик, агрегаций, поиска аномалий.
 - `record_web_guide(start_url, goal, headless, max_steps, model)` — запускает реальный браузер, выполняет навигацию на сайте и записывает пошаговое руководство с видео. Используй когда пользователь просит показать «как найти», «как добраться», «как сделать» на конкретном сайте.
+- `escalate_to_operator(reason)` — передать обращение оператору-человеку. Используй когда: вопрос выходит за рамки базы знаний, ты не уверен в корректности ответа, проблема требует ручного вмешательства (баг на стороне сервиса), пользователь явно просит человека, или после двух попыток ты всё ещё не можешь помочь. После вызова сообщи пользователю, что передаёшь его оператору.
 
 ## Общие правила
 
@@ -231,7 +232,16 @@ async def respond_node(state: AgentState) -> Dict[str, Any]:
             answer = "\n".join(str(c) for c in content) if isinstance(content, list) else str(content)
             break
     logger.info("[iter=%d] respond | final_answer=%s", iterations, _shorten(answer, 800))
-    return {"final_answer": answer or "(empty)"}
+
+    escalated = any(
+        obs.get("tool_name") == "escalate_to_operator"
+        for obs in (state.get("observations") or [])
+    )
+    result: Dict[str, Any] = {"final_answer": answer or "(empty)"}
+    if escalated:
+        result["escalate_to_operator"] = True
+        logger.info("[iter=%d] respond | escalated=True", iterations)
+    return result
 
 
 def _route_after_reason(state: AgentState) -> str:

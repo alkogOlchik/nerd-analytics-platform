@@ -312,6 +312,14 @@ async def chat(
     answer = ml_result.answer
     ml_response: dict = ml_result.raw or {"answer": answer, "model": ml_result.model}
 
+    if (
+        ml_result.raw
+        and ml_result.raw.get("escalate_to_operator")
+        and ticket
+        and ticket.status not in ("closed", "waiting_for_operator")
+    ):
+        ticket.status = "waiting_for_operator"
+
     assistant_msg = ChatHistory(
         chat_id=chat_id,
         client_id=client_id,

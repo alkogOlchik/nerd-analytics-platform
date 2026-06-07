@@ -8,6 +8,7 @@ from langchain_core.tools import tool
 
 from .analytics_tool import run_analytics as _run_analytics_impl
 from .code_executor import execute_code
+from .escalate_tool import escalate_to_operator
 from .rag_tool import rag_search as _rag_search_impl
 from .web_guide_tool import record_web_guide as _record_web_guide_impl
 
@@ -69,6 +70,6 @@ async def record_web_guide(
     )
 
 
-TOOLS = [rag_search, run_analytics, record_web_guide]
+TOOLS = [rag_search, run_analytics, record_web_guide, escalate_to_operator]
 
-__all__ = ["TOOLS", "execute_code", "rag_search", "run_analytics", "record_web_guide"]
+__all__ = ["TOOLS", "execute_code", "rag_search", "run_analytics", "record_web_guide", "escalate_to_operator"]
