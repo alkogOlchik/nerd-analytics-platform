@@ -8,12 +8,6 @@ export const PromptCard = ({ value, onChange, onSubmit }: PromptCardProps) => {
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault()
-            onSubmit()
-          }
-        }}
         placeholder="Опишите вашу проблему..."
         className={styles.textarea}
       />

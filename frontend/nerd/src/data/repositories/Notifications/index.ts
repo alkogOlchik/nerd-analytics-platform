@@ -36,7 +36,7 @@ const mapNotification = (dto: NotificationDto): Notification => {
     type: uiType,
     title: TITLE_MAP[key] ?? "Уведомление",
     message: MESSAGE_MAP[key] ?? "Уведомление от платформы",
-    isRead: dto.is_read,
+    isRead: notificationsSource.computeIsRead(dto.id, dto.created_at),
     createdAt: dto.created_at,
     ticketId: dto.ticket_id ?? undefined,
   }

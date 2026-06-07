@@ -1,6 +1,8 @@
 export const GENDER_OPTIONS = [
+  { value: "", label: "Не указан" },
   { value: "male", label: "Мужской" },
   { value: "female", label: "Женский" },
+  { value: "other", label: "Другой" },
 ] as const
 
 export const VALIDATION_MESSAGES = {

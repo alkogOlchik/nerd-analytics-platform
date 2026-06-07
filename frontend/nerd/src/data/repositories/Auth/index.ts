@@ -70,21 +70,6 @@ export const authRepository = {
     const dto = await authSource.me()
     return mapUserDto(dto)
   },
-
-  updateProfile: async (data: {
-    fullName?: string
-    city?: string
-    age?: number
-    gender?: string
-  }): Promise<User> => {
-    const dto = await authSource.updateProfile({
-      full_name: data.fullName,
-      city: data.city,
-      age: data.age,
-      gender: data.gender,
-    })
-    return mapUserDto(dto)
-  },
 }
 
 export type { User, LoginRequest, RegisterRequest }

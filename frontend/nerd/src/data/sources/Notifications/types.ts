@@ -10,6 +10,5 @@ export interface NotificationDto {
   ticket_id: string | null
   type: NotificationApiType
   status: NotificationApiStatus
-  is_read: boolean
   created_at: string
 }

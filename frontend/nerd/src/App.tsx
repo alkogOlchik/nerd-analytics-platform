@@ -14,33 +14,64 @@ import { CreateTicketPage } from "./pages/CreateTicketPage"
 import { FeedbackPage } from "./pages/FeedbackPage"
 import { TicketStatusPage } from "./pages/TicketStatusPage"
 import { PrivateRoute } from "./shared/ui/PrivateRoute"
+// import { EmployeeRoute } from "./shared/ui/EmployeeRoute"
 
 const appRoutes: RouteObject[] = [
-  // Публичные маршруты — доступны без авторизации
-  { path: routes.login, element: <LoginPage /> },
-  { path: routes.register, element: <RegisterPage /> },
-  { path: routes.main, element: <MainPage /> },
-  { path: routes.assistant, element: <AssistantPage /> },
-
-  // Создание обращения и отслеживание статуса — доступны без авторизации,
-  // при анонимном создании обращения запрашивается email (временный токен).
-  { path: routes.createTicket, element: <CreateTicketPage /> },
-  { path: routes.ticketStatus, element: <TicketStatusPage /> },
-
-  // Приватные маршруты — требуют авторизации
+  {
+    path: routes.login,
+    element: <LoginPage />,
+  },
+  {
+    path: routes.register,
+    element: <RegisterPage />,
+  },
+  {
+    path: routes.main,
+    element: <MainPage />,
+  },
+  {
+    path: routes.assistant,
+    element: <AssistantPage />,
+  },
+  { path: routes.tickets,
+    element: <TicketsPage />
+  },
+  {
+    path: routes.notifications,
+    element: <NotificationsPage />
+  },
+  {
+    path: routes.createTicket,
+    element: <CreateTicketPage />
+  },
+  {
+    path: routes.feedback,
+    element: <FeedbackPage />
+  },
+  {
+    path: routes.ticketStatus,
+    element: <TicketStatusPage />
+  },
+  { path: routes.analytics, element: <AnalyticsPage /> },
   {
     element: <PrivateRoute />,
     children: [
-      { path: routes.tickets, element: <TicketsPage /> },
-      { path: routes.notifications, element: <NotificationsPage /> },
-      { path: routes.feedback, element: <FeedbackPage /> },
+      // TODO: вернуть EmployeeRoute когда роль admin/employee будет стабильно приходить с бека
+      // {
+      //   element: <EmployeeRoute />,
+      //   children: [
+      //     { path: routes.analytics, element: <AnalyticsPage /> },
+      //   ],
+      // },
       { path: routes.analytics, element: <AnalyticsPage /> },
       { path: routes.profile, element: <ProfilePage /> },
       { path: routes.settings, element: <SettingsPage /> },
     ],
   },
-
-  { path: "*", element: <NotFoundPage /> },
+  {
+    path: "*",
+    element: <NotFoundPage />,
+  },
 ]
 
 const router = createBrowserRouter(appRoutes)
