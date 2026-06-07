@@ -8,13 +8,11 @@ export type TicketStatus =
 export type TicketPriority = "low" | "medium" | "high"
 export type TicketProduct =
   | "веб-сервис"
-  | "ии-ассистент"
-  | "аналитический модуль"
+  | "платёжный сервис"
+  | "мобильное приложение"
+  | "API интеграция"
   | "личный кабинет"
-  | "уведомления"
-  | "страница обращений"
-  | "страница отзывов"
-  | "работа оператора"
+  | "аналитический модуль"
 
 export interface Ticket {
   id: string
