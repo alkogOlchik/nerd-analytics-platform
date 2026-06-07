@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from "react"
 import { useLocation } from "react-router-dom"
-import { Bot, User2, CheckCircle2 } from "lucide-react"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { Bot, User2 } from "lucide-react"
 import styles from "./AssistantScreen.module.scss"
 import { Sidebar, UserMenu } from "modules"
 import { ChatHistory } from "modules/ChatHistory"
@@ -11,21 +10,20 @@ import { useChatSessions } from "domain/Assistant/useChatSessions"
 import { useMessages } from "domain/Assistant/useMessages"
 import { useSendMessage } from "domain/Assistant/useSendMessage"
 import { useCreateSession } from "domain/Assistant/useCreateSession"
-import { apiClient } from "data/apiClient"
 import type { CreateSessionResult } from "data/repositories/Assistant"
 
 export const AssistantScreen = () => {
+  const location = useLocation()
+  const initialMsg =
+    ((location.state as { initialMessage?: string })?.initialMessage ?? "").trim() || null
+
   // undefined = initial (fall back to sessions[0]), null = explicitly "new chat", string = selected session
   const [activeSessionId, setActiveSessionId] = useState<string | null | undefined>(undefined)
   const [inputValue, setInputValue] = useState("")
-  const [pendingFirstMessage, setPendingFirstMessage] = useState<string | null>(null)
-  const [closingMessage, setClosingMessage] = useState<string | null>(null)
+  const [pendingFirstMessage, setPendingFirstMessage] = useState<string | null>(initialMsg)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const location = useLocation()
-  const pendingInitialMsgRef = useRef<string | null>(null)
+  const pendingInitialMsgRef = useRef<string | null>(initialMsg)
   const autoSentRef = useRef(false)
-  // Synchronous guard: isPending is async (React state), so two calls can slip through before re-render
-  const sessionCreatingRef = useRef(false)
 
   const { data: sessions = [], isLoading: sessionsLoading } = useChatSessions()
 
@@ -33,11 +31,7 @@ export const AssistantScreen = () => {
     activeSessionId !== undefined ? activeSessionId : (sessions[0]?.id ?? null)
 
   const { data: messages = [], isLoading: messagesLoading } = useMessages(effectiveSessionId)
-
-  const activeSession = sessions.find((s) => s.id === effectiveSessionId)
-  const ticketId = activeSession?.ticketId ?? null
-
-  const sendMessage = useSendMessage(effectiveSessionId, ticketId)
+  const sendMessage = useSendMessage(effectiveSessionId)
 
   const handleSessionCreated = (result: CreateSessionResult) => {
     setActiveSessionId(result.session.id)
@@ -46,17 +40,6 @@ export const AssistantScreen = () => {
   }
 
   const createSession = useCreateSession(handleSessionCreated)
-
-  // Capture initial message passed from MainScreen on first render
-  useEffect(() => {
-    const initialMsg = (location.state as { initialMessage?: string })?.initialMessage
-    if (initialMsg?.trim()) {
-      pendingInitialMsgRef.current = initialMsg
-      setPendingFirstMessage(initialMsg)
-      createSession.mutate({ firstMessage: initialMsg })
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   // Once sessions finish loading, decide where to send the initial message
   useEffect(() => {
@@ -70,7 +53,6 @@ export const AssistantScreen = () => {
 
     if (sessions.length > 0) {
       // existing session — send the message there, no new session needed
-      setPendingFirstMessage(null)
       sendMessage.mutate({ content: msg, files: [] })
     } else {
       createSession.mutate({ firstMessage: msg })
@@ -80,24 +62,16 @@ export const AssistantScreen = () => {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages, pendingFirstMessage, closingMessage])
+  }, [messages, pendingFirstMessage])
 
   const handleSend = (files: File[]) => {
     const text = inputValue.trim()
     if (!text && files.length === 0) return
 
     if (!effectiveSessionId) {
-      if (sessionCreatingRef.current) return
-      sessionCreatingRef.current = true
       setPendingFirstMessage(text || `[${files.map((f) => f.name).join(", ")}]`)
       setInputValue("")
-      createSession.mutate(
-        { firstMessage: text, files },
-        {
-          onSuccess: (r) => { if (r.messages[1] && "escalation" in r) setNeedsEscalation(false) },
-          onSettled: () => { sessionCreatingRef.current = false },
-        },
-      )
+      createSession.mutate({ firstMessage: text, files })
     } else {
       sendMessage.mutate({ content: text, files })
       setInputValue("")
@@ -108,27 +82,11 @@ export const AssistantScreen = () => {
     setActiveSessionId(null)
     setInputValue("")
     setPendingFirstMessage(null)
-    setClosingMessage(null)
-  }
-
-  const handleSessionSelect = (id: string | null) => {
-    setActiveSessionId(id)
-    setClosingMessage(null)
   }
 
   const isSending = sendMessage.isPending || createSession.isPending
 
-  const queryClient = useQueryClient()
-
-  const resolveTicket = useMutation({
-    mutationFn: (id: string) => apiClient.post(`/tickets/${id}/resolve`),
-    onSuccess: () => {
-      setClosingMessage("Рад был помочь! Обращение закрыто.")
-      queryClient.invalidateQueries({ queryKey: ["tickets"] })
-    },
-  })
-
-  const ticketActioned = resolveTicket.isSuccess
+  const activeSession = sessions.find((s) => s.id === effectiveSessionId)
 
   // Deduplicate messages by id as a safety net
   const uniqueMessages = messages.filter(
@@ -142,7 +100,7 @@ export const AssistantScreen = () => {
         sessions={sessions}
         activeSessionId={effectiveSessionId}
         isLoading={sessionsLoading}
-        onSelect={handleSessionSelect}
+        onSelect={setActiveSessionId}
         onNewChat={handleNewChat}
       />
 
@@ -208,38 +166,14 @@ export const AssistantScreen = () => {
             </div>
           )}
 
-          {closingMessage && (
-            <div className={styles.closingMessage}>
-              <div className={styles.closingAvatar}>
-                <Bot size={16} />
-              </div>
-              <div className={styles.closingBubble}>
-                <p className={styles.closingText}>{closingMessage}</p>
-              </div>
-            </div>
-          )}
-
           <div ref={messagesEndRef} />
         </div>
-
-        {ticketId && uniqueMessages.length > 0 && !ticketActioned && (
-          <div className={styles.ticketActions}>
-            <button
-              className={styles.resolveBtn}
-              onClick={() => resolveTicket.mutate(ticketId)}
-              disabled={resolveTicket.isPending}
-            >
-              <CheckCircle2 size={16} />
-              Проблема решена
-            </button>
-          </div>
-        )}
 
         <ChatInput
           value={inputValue}
           onChange={setInputValue}
           onSubmit={handleSend}
-          disabled={isSending || ticketActioned}
+          disabled={isSending}
         />
       </main>
     </div>
