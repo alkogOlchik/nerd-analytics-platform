@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { AlertTriangle, Lightbulb, ClipboardList } from "lucide-react"
+import { AlertTriangle, Lightbulb } from "lucide-react"
 import styles from "./styles.module.scss"
 import { Sidebar, PromptCard, QuickActionCard, FAQItem, UserMenu } from "modules"
 import clsx from "clsx"
@@ -53,22 +53,16 @@ export const MainScreen = () => {
 
           <div className={styles.actionsGrid}>
             <QuickActionCard
-              title="Сообщить о проблеме"
-              description="Создать новое обращение"
+              title="Проблема с сайтом Nerd Analytics"
+              description="Создать новое обращение по этому сайту"
               icon={AlertTriangle}
               onClick={() => navigate(routes.createTicket)}
             />
             <QuickActionCard
-              title="Написать отзыв"
-              description="Поделитесь своим мнением"
+              title="Оставить отзыв о Nerd Analytics"
+              description="Поделитесь своим мнением об этом сайте"
               icon={Lightbulb}
               onClick={() => navigate(routes.feedback)}
-            />
-            <QuickActionCard
-              title="Проверить статус"
-              description="Мои обращения"
-              icon={ClipboardList}
-              onClick={() => navigate(routes.ticketStatus)}
             />
           </div>
         </section>
