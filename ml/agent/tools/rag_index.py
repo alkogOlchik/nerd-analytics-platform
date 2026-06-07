@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import argparse
 import logging
+import pickle
+import re
 import sys
 from pathlib import Path
 from typing import Iterable, Optional
@@ -19,8 +21,15 @@ from langchain_chroma import Chroma
 from langchain_core.documents import Document
 from langchain_ollama import OllamaEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from rank_bm25 import BM25Okapi
 
 from agent.config import settings
+
+BM25_INDEX_FILENAME = "bm25_index.pkl"
+
+
+def _tokenize(text: str) -> list[str]:
+    return re.findall(r"\w+", text.lower())
 
 logger = logging.getLogger(__name__)
 
@@ -143,6 +152,20 @@ def index_directory(
 
     vectorstore.add_documents(chunks)
 
+    # Build and persist BM25 index from the same chunks.
+    corpus = [_tokenize(c.page_content) for c in chunks]
+    bm25 = BM25Okapi(corpus)
+    bm25_payload = {
+        "bm25": bm25,
+        "chunks": [
+            {"content": c.page_content, "metadata": c.metadata} for c in chunks
+        ],
+    }
+    bm25_path = persist_dir / BM25_INDEX_FILENAME
+    with bm25_path.open("wb") as fh:
+        pickle.dump(bm25_payload, fh)
+    logger.info("BM25 index saved to %s (%d chunks)", bm25_path, len(chunks))
+
     return {
         "ok": True,
         "docs": len(documents),
@@ -150,6 +173,7 @@ def index_directory(
         "persist_dir": str(persist_dir),
         "collection": settings.chroma_collection_name,
         "embeddings_model": settings.ollama_embeddings_model,
+        "bm25_index": str(bm25_path),
     }
 
 
