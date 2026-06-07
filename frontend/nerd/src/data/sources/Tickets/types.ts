@@ -83,6 +83,27 @@ export interface StatusHistoryDto {
   created_at: string
 }
 
+export interface GuestTicketCreateRequest {
+  product: TicketProductDto
+  priority: TicketPriorityDto
+  message: string
+  guest_email: string
+}
+
+export interface GuestTicketResponse {
+  ticket_id: string
+  guest_token: string
+  status: string
+}
+
+export interface GuestTrackResponse {
+  ticket_id: string
+  status: string
+  status_updated_at: string | null
+  product: string
+  created_at: string
+}
+
 export interface CommentDto {
   id: string
   chat_id: string

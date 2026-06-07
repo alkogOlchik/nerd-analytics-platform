@@ -12,4 +12,5 @@ export const routes = {
     feedback: "/feedback",
     ticketStatus: "/ticket-status",
     myReviews: "/my-reviews",
+    guestTicketTrack: "/ticket-track/:token",
 } as const

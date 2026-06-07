@@ -52,6 +52,27 @@ export interface UpdateTicketInput {
   slaTtfrMin?: number
 }
 
+export interface GuestTicketInput {
+  product: TicketProduct
+  priority: TicketPriority
+  message: string
+  guestEmail: string
+}
+
+export interface GuestTicketResult {
+  ticketId: string
+  guestToken: string
+  status: string
+}
+
+export interface GuestTrackResult {
+  ticketId: string
+  status: string
+  statusUpdatedAt: string | null
+  product: string
+  createdAt: string
+}
+
 export interface StatusHistoryEntry {
   id: string
   ticketId: string | null
