@@ -1,6 +1,7 @@
 import uuid
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -25,6 +26,7 @@ from backend.app.schemas.ai import (
 from backend.app.schemas.ticket import TicketResponse
 from backend.app.schemas.ticket_extended import TicketEscalateResponse
 from backend.app.services import ai_service, s3_service
+from backend.app.services.ml_client import ml_client
 
 _SUPPORTED_CONTENT_TYPES = {
     "application/pdf",
@@ -255,3 +257,19 @@ async def delete_file(
     await s3_service.delete_file(cf.s3_key)
     await db.delete(cf)
     await db.commit()
+
+
+class AnalyticsQueryRequest(BaseModel):
+    message: str
+    model: str = "gemma4:e2b"
+
+
+@router.post("/analytics/query")
+async def analytics_query(
+    req: AnalyticsQueryRequest,
+    _: CurrentUser = Depends(get_current_user),
+):
+    """Lightweight analytics chat — no ticket creation, just ML proxy with analytics context."""
+    prefixed = f"Режим: аналитический ассистент. Пользователь изучает дашборд аналитики.\n\n{req.message}"
+    result = await ml_client.query(prefixed, model=req.model)
+    return {"answer": result.answer}

@@ -8,6 +8,7 @@ import { AdminsDashboard } from "./dashboards/AdminsDashboard"
 import { UsersDashboard } from "./dashboards/UsersDashboard"
 import { ReviewsDashboard } from "./dashboards/ReviewsDashboard"
 import { TicketsDetailDashboard } from "./dashboards/TicketsDetailDashboard"
+import { AnalyticsChatPanel } from "./components/AnalyticsChatPanel"
 import styles from "./styles.module.scss"
 
 type DashboardId = "overview" | "ai" | "admins" | "users" | "reviews" | "tickets"
@@ -62,8 +63,11 @@ export const AnalyticsScreen = () => {
           ))}
         </div>
 
-        <div className={styles.content}>
-          <ActiveDashboard />
+        <div className={styles.body}>
+          <div className={styles.content}>
+            <ActiveDashboard />
+          </div>
+          <AnalyticsChatPanel />
         </div>
       </main>
     </div>

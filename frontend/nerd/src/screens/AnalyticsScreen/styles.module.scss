@@ -82,10 +82,18 @@
   }
 }
 
+.body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-height: 0;
+}
+
 .content {
   flex: 1;
   padding: 28px 40px;
   overflow-y: auto;
+  min-width: 0;
 
   &::-webkit-scrollbar {
     width: 6px;
