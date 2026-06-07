@@ -22,6 +22,7 @@ export const AssistantScreen = () => {
   const [closingMessage, setClosingMessage] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const location = useLocation()
+  const pendingInitialMsgRef = useRef<string | null>(null)
   const autoSentRef = useRef(false)
   // Synchronous guard: isPending is async (React state), so two calls can slip through before re-render
   const sessionCreatingRef = useRef(false)
@@ -46,21 +47,36 @@ export const AssistantScreen = () => {
 
   const createSession = useCreateSession(handleSessionCreated)
 
-  // Auto-send message passed from PromptCard on the main screen
+  // Capture initial message passed from MainScreen on first render
   useEffect(() => {
-    if (autoSentRef.current) return
     const initialMsg = (location.state as { initialMessage?: string })?.initialMessage
     if (initialMsg?.trim()) {
-      autoSentRef.current = true
-      sessionCreatingRef.current = true
+      pendingInitialMsgRef.current = initialMsg
       setPendingFirstMessage(initialMsg)
-      createSession.mutate(
-        { firstMessage: initialMsg },
-        { onSettled: () => { sessionCreatingRef.current = false } },
-      )
+      createSession.mutate({ firstMessage: initialMsg })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Once sessions finish loading, decide where to send the initial message
+  useEffect(() => {
+    if (autoSentRef.current) return
+    if (sessionsLoading) return
+    const msg = pendingInitialMsgRef.current
+    if (!msg?.trim()) return
+
+    autoSentRef.current = true
+    pendingInitialMsgRef.current = null
+
+    if (sessions.length > 0) {
+      // existing session — send the message there, no new session needed
+      setPendingFirstMessage(null)
+      sendMessage.mutate({ content: msg, files: [] })
+    } else {
+      createSession.mutate({ firstMessage: msg })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionsLoading])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
