@@ -17,10 +17,10 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column("tickets", sa.Column("title", sa.String(255), nullable=True))
+    op.execute("ALTER TABLE tickets ADD COLUMN IF NOT EXISTS title VARCHAR(255)")
     op.alter_column("tickets", "product", existing_type=sa.String(64), nullable=True)
 
 
 def downgrade() -> None:
     op.alter_column("tickets", "product", existing_type=sa.String(64), nullable=False)
-    op.drop_column("tickets", "title")
+    op.execute("ALTER TABLE tickets DROP COLUMN IF EXISTS title")
