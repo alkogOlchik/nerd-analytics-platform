@@ -190,3 +190,12 @@ class ChatResponse(BaseModel):
     assistant_message: ChatMessageResponse
     ml_response: dict
     escalation: EscalationOffer | None = None
+
+
+class ChatSessionResponse(BaseModel):
+    id: uuid.UUID
+    title: str
+    created_at: datetime
+    updated_at: datetime
+    last_message: str | None = None
+    ticket_id: uuid.UUID | None = None

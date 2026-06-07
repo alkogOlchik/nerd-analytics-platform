@@ -51,3 +51,37 @@ export interface ClassifyTicketRequest {
   text: string
   model?: string
 }
+
+export interface AddCommentRequest {
+  message: string
+}
+
+export interface PatchStatusRequest {
+  status: TicketStatusDto
+  admin_priority?: string
+  responsible_id?: string
+}
+
+export interface PatchPriorityRequest {
+  admin_priority: string
+}
+
+export interface StatusHistoryDto {
+  id: string
+  ticket_id: string | null
+  status_from: string | null
+  status_to: string | null
+  changed_by: string | null
+  created_at: string
+}
+
+export interface CommentDto {
+  id: string
+  chat_id: string
+  ticket_id: string | null
+  client_id: string
+  role: string
+  message: string
+  resolved_by_ai: boolean
+  created_at: string
+}

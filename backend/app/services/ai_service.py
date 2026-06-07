@@ -223,10 +223,18 @@ async def chat(
             history_parts.append(f"{role_label}: {row.message}")
 
     current_query = "\n\n".join(context_parts + [data.message]) if context_parts else _message_for_ml(data)
+
+    prefix_parts: list[str] = []
+    if product:
+        prefix_parts.append(f"Продукт: {product}")
+    if category:
+        prefix_parts.append(f"Категория: {category}")
+    prefix = ("\n".join(prefix_parts) + "\n\n") if prefix_parts else ""
+
     if history_parts:
-        ml_text = "История диалога:\n" + "\n".join(history_parts) + "\n\nТекущий вопрос:\n" + current_query
+        ml_text = prefix + "История диалога:\n" + "\n".join(history_parts) + "\n\nТекущий вопрос:\n" + current_query
     else:
-        ml_text = current_query
+        ml_text = prefix + current_query
 
     user_msg = ChatHistory(
         chat_id=chat_id,

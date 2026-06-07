@@ -1,1 +1,5 @@
 export { useTickets, TICKETS_QUERY_KEY } from "./useTickets"
+export { useCreateTicket } from "./useCreateTicket"
+export { useUpdateTicketStatus } from "./useUpdateTicketStatus"
+export { useAddTicketComment } from "./useAddTicketComment"
+export { useReopenTicket } from "./useReopenTicket"

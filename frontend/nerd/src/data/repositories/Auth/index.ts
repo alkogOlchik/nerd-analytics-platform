@@ -2,6 +2,13 @@ import { authSource } from "data/sources/Auth"
 import type { AuthTokens, LoginRequest, RegisterRequest, UserDto } from "data/sources/Auth"
 import type { User } from "./types"
 
+interface UpdateMeData {
+  fullName?: string
+  city?: string
+  age?: number
+  gender?: string
+}
+
 const getAccessToken = () => localStorage.getItem("access_token")
 const getRefreshToken = () => localStorage.getItem("refresh_token")
 
@@ -68,6 +75,16 @@ export const authRepository = {
   me: async (): Promise<User> => {
     if (MOCK_ROLE) return MOCK_USER
     const dto = await authSource.me()
+    return mapUserDto(dto)
+  },
+
+  updateMe: async (data: UpdateMeData): Promise<User> => {
+    const dto = await authSource.updateMe({
+      full_name: data.fullName,
+      city: data.city,
+      age: data.age,
+      gender: data.gender,
+    })
     return mapUserDto(dto)
   },
 }

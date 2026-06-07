@@ -26,7 +26,10 @@ def hash_password(password: str) -> str:
 
 
 def verify_password(password: str, hashed_password: str) -> bool:
-    return bcrypt.checkpw(password.encode("utf-8"), hashed_password.encode("utf-8"))
+    try:
+        return bcrypt.checkpw(password.encode("utf-8"), hashed_password.encode("utf-8"))
+    except Exception:
+        return False
 
 
 def _create_token(subject: str, role: UserRole, token_type: str, expires_delta: timedelta) -> str:
@@ -67,11 +70,13 @@ def decode_token(token: str, expected_type: str = "access") -> dict:
 
 
 async def register_client(db: AsyncSession, data: ClientRegister) -> Client:
-    existing = await db.execute(
-        select(Client).where((Client.username == data.username) | (Client.email == data.email))
-    )
-    if existing.scalar_one_or_none():
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username or email already exists")
+    by_username = await db.execute(select(Client).where(Client.username == data.username))
+    if by_username.scalar_one_or_none():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already taken")
+
+    by_email = await db.execute(select(Client).where(Client.email == data.email))
+    if by_email.scalar_one_or_none():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
 
     client = Client(
         username=data.username,

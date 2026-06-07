@@ -1,5 +1,5 @@
 import { apiClient } from "data/apiClient"
-import type { AuthTokens, LoginRequest, RegisterRequest, UserDto } from "./types"
+import type { AuthTokens, LoginRequest, RegisterRequest, UpdateMeRequest, UserDto } from "./types"
 
 export const authSource = {
   login: (req: LoginRequest) =>
@@ -20,6 +20,9 @@ export const authSource = {
     apiClient.post<AuthTokens>("/auth/refresh", { refresh_token: refreshToken }).then((r) => r.data),
 
   me: () => apiClient.get<UserDto>("/auth/me").then((r) => r.data),
+
+  updateMe: (data: UpdateMeRequest) =>
+    apiClient.patch<UserDto>("/auth/me", data).then((r) => r.data),
 }
 
-export type { AuthTokens, LoginRequest, RegisterRequest, UserDto }
+export type { AuthTokens, LoginRequest, RegisterRequest, UpdateMeRequest, UserDto }

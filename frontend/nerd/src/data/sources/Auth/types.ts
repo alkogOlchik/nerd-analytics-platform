@@ -30,3 +30,10 @@ export interface UserDto {
   city?: string
   created_at?: string
 }
+
+export interface UpdateMeRequest {
+  full_name?: string
+  city?: string
+  age?: number
+  gender?: string
+}

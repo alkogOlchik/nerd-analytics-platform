@@ -13,8 +13,6 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "change-me-in-production-use-openssl-rand-hex-32"
     KAFKA_URL: str = "localhost:9092"
     ML_SERVICE_URL: str = "http://localhost:8091"
-    OLLAMA_BASE_URL: str = "http://localhost:11434"
-    ML_OLLAMA_FALLBACK: bool = True
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     APP_SERVICE_URL: str = "http://127.0.0.1:8001"

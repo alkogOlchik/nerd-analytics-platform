@@ -7,6 +7,9 @@ import type {
   SendMessageResponse,
   CreateSessionResponse,
   UploadedFileDto,
+  EscalationOffer,
+  EscalateChatRequest,
+  EscalateChatResponse,
 } from "./types"
 
 const SESSIONS_KEY = "nerd_chat_sessions"
@@ -28,6 +31,7 @@ interface ApiChatResponse {
   user_message: MessageDto
   assistant_message: MessageDto
   ml_response: Record<string, unknown>
+  escalation: EscalationOffer | null
 }
 
 export const assistantSource = {
@@ -69,7 +73,7 @@ export const assistantSource = {
       saveSessions(sessions)
     }
 
-    return { user_message: data.user_message, assistant_message: data.assistant_message }
+    return { user_message: data.user_message, assistant_message: data.assistant_message, escalation: data.escalation ?? null }
   },
 
   createSession: async (req: CreateSessionRequest): Promise<CreateSessionResponse> => {
@@ -94,7 +98,18 @@ export const assistantSource = {
     sessions.unshift(session)
     saveSessions(sessions)
 
-    return { session, messages: [data.user_message, data.assistant_message] }
+    return { session, messages: [data.user_message, data.assistant_message], escalation: data.escalation ?? null }
+  },
+
+  escalateChat: async (req: EscalateChatRequest): Promise<EscalateChatResponse> => {
+    const { data } = await apiClient.post<EscalateChatResponse>("/ai/chat/escalate", {
+      chat_id: req.chat_id,
+      product: req.product,
+      user_priority: req.user_priority,
+      category: req.category,
+      description: req.description,
+    })
+    return data
   },
 }
 
@@ -106,4 +121,7 @@ export type {
   SendMessageResponse,
   CreateSessionResponse,
   UploadedFileDto,
+  EscalationOffer,
+  EscalateChatRequest,
+  EscalateChatResponse,
 }

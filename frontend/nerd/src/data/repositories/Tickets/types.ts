@@ -44,3 +44,12 @@ export interface UpdateTicketInput {
   isAdminChanged?: boolean
   slaTtfrMin?: number
 }
+
+export interface StatusHistoryEntry {
+  id: string
+  ticketId: string | null
+  statusFrom: string | null
+  statusTo: string | null
+  changedBy: string | null
+  createdAt: string
+}

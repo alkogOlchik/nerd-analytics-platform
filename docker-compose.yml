@@ -68,7 +68,6 @@ services:
       ANALYTICS_DATABASE_URL: postgresql+asyncpg://postgres:password@db:5432/nerd_analytics_db
       KAFKA_URL: kafka:9092
       ML_SERVICE_URL: http://host.docker.internal:8091
-      OLLAMA_BASE_URL: http://host.docker.internal:11434
       APP_SERVICE_URL: http://backend:8001
       SECRET_KEY: change-me-in-production
       ACCESS_TOKEN_EXPIRE_MINUTES: "30"
@@ -117,23 +116,8 @@ services:
     depends_on:
       - gateway
 
-  # ─── ML Agent (optional) ───────────────────────────────────────────────────
-  # Requires Ollama running on the host. Enable with: docker compose --profile ml up
-
-  ml-agent:
-    build:
-      context: ./ml
-      dockerfile: Dockerfile
-    profiles: ["ml"]
-    environment:
-      OLLAMA_BASE_URL: http://host.docker.internal:11434/v1
-      CHROMA_PATH: /app/chroma_db
-    ports:
-      - "8090:8090"
-    volumes:
-      - ./ml/chroma_db:/app/chroma_db
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+  # ML-агент запускается вне Docker (рядом с Ollama, для доступа к GPU)
+  # Запуск: см. ml/README.md или команду в Makefile
 
 volumes:
   pgdata:

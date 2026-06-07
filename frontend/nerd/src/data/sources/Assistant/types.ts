@@ -38,12 +38,40 @@ export interface UploadedFileDto {
   created_at: string
 }
 
+export interface EscalationOffer {
+  required: boolean
+  suggested_product: string | null
+  suggested_category: string | null
+  confidence: number | null
+  products: string[]
+  categories: string[]
+  priorities: string[]
+  priority_labels: Record<string, string>
+}
+
+export interface EscalateChatRequest {
+  chat_id: string
+  product: string
+  user_priority: string
+  category?: string
+  description?: string
+}
+
+export interface EscalateChatResponse {
+  ticket_id: string
+  status: string
+  ai_suggested_category: string | null
+  final_category: string | null
+}
+
 export interface SendMessageResponse {
   user_message: MessageDto
   assistant_message: MessageDto
+  escalation: EscalationOffer | null
 }
 
 export interface CreateSessionResponse {
   session: ChatSessionDto
   messages: MessageDto[]
+  escalation: EscalationOffer | null
 }

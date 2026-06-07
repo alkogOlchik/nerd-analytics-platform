@@ -1,5 +1,15 @@
 import { apiClient } from "data/apiClient"
-import type { TicketDto, CreateTicketRequest, UpdateTicketRequest, ClassifyTicketRequest } from "./types"
+import type {
+  TicketDto,
+  CreateTicketRequest,
+  UpdateTicketRequest,
+  ClassifyTicketRequest,
+  AddCommentRequest,
+  PatchStatusRequest,
+  PatchPriorityRequest,
+  StatusHistoryDto,
+  CommentDto,
+} from "./types"
 
 export const ticketsSource = {
   getTickets: (params?: {
@@ -35,6 +45,28 @@ export const ticketsSource = {
         `/ai/classify/ticket/${ticketId}`,
       )
       .then((r) => r.data),
+
+  addComment: (id: string, req: AddCommentRequest) =>
+    apiClient.post<CommentDto>(`/tickets/${id}/comments`, req).then((r) => r.data),
+
+  patchStatus: (id: string, req: PatchStatusRequest) =>
+    apiClient.patch<TicketDto>(`/tickets/${id}/status`, req).then((r) => r.data),
+
+  patchPriority: (id: string, req: PatchPriorityRequest) =>
+    apiClient.patch<TicketDto>(`/tickets/${id}/priority`, req).then((r) => r.data),
+
+  getStatusHistory: (id: string) =>
+    apiClient.get<StatusHistoryDto[]>(`/tickets/${id}/status-history`).then((r) => r.data),
 }
 
-export type { TicketDto, CreateTicketRequest, UpdateTicketRequest, ClassifyTicketRequest }
+export type {
+  TicketDto,
+  CreateTicketRequest,
+  UpdateTicketRequest,
+  ClassifyTicketRequest,
+  AddCommentRequest,
+  PatchStatusRequest,
+  PatchPriorityRequest,
+  StatusHistoryDto,
+  CommentDto,
+}

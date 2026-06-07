@@ -7,9 +7,15 @@ import { useMe } from "domain/Auth/useMe"
 import { routes } from "shared/utils/routes"
 import styles from "./styles.module.scss"
 
+const ERROR_MAP: Record<string, string> = {
+  "Username already taken": "Такой логин уже занят",
+  "Email already registered": "Этот email уже зарегистрирован",
+  "Username or email already exists": "Логин или email уже зарегистрирован",
+}
+
 const extractError = (err: unknown): string => {
   const detail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail
-  if (typeof detail === "string") return detail
+  if (typeof detail === "string") return ERROR_MAP[detail] ?? detail
   if (Array.isArray(detail)) return detail.map((d: { msg: string }) => d.msg).join(", ")
   return "Ошибка сервера"
 }

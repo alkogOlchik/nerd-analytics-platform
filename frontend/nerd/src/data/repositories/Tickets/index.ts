@@ -1,11 +1,20 @@
 import { ticketsSource } from "data/sources/Tickets"
-import type { TicketDto } from "data/sources/Tickets"
+import type { TicketDto, StatusHistoryDto } from "data/sources/Tickets"
 import { MOCK_TICKETS } from "./mocks"
-import type { Ticket, CreateTicketInput, UpdateTicketInput } from "./types"
+import type { Ticket, CreateTicketInput, UpdateTicketInput, StatusHistoryEntry } from "./types"
 
 const IS_MOCK = import.meta.env.VITE_IS_MOCK === "true"
 
 const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
+
+const mapStatusHistory = (dto: StatusHistoryDto): StatusHistoryEntry => ({
+  id: dto.id,
+  ticketId: dto.ticket_id,
+  statusFrom: dto.status_from,
+  statusTo: dto.status_to,
+  changedBy: dto.changed_by,
+  createdAt: dto.created_at,
+})
 
 const mapTicket = (dto: TicketDto): Ticket => ({
   id: dto.id,
@@ -93,6 +102,23 @@ const mockRepository = {
     }
     return { ...mockStore[idx] }
   },
+
+  addComment: async (_id: string, _message: string): Promise<void> => {
+    await delay(200)
+  },
+
+  patchStatus: async (id: string, status: string): Promise<Ticket> => {
+    await delay(200)
+    const idx = mockStore.findIndex((t) => t.id === id)
+    if (idx === -1) throw new Error(`Ticket ${id} not found`)
+    mockStore[idx] = { ...mockStore[idx], status: status as Ticket["status"] }
+    return { ...mockStore[idx] }
+  },
+
+  getStatusHistory: async (_id: string): Promise<StatusHistoryEntry[]> => {
+    await delay(200)
+    return []
+  },
 }
 
 const realRepository = {
@@ -133,8 +159,27 @@ const realRepository = {
     const dto = await ticketsSource.reopenTicket(id)
     return mapTicket(dto)
   },
+
+  addComment: async (id: string, message: string): Promise<void> => {
+    await ticketsSource.addComment(id, { message })
+  },
+
+  patchStatus: async (id: string, status: string, responsibleId?: string): Promise<Ticket> => {
+    const dto = await ticketsSource.patchStatus(id, { status: status as TicketDto["status"], responsible_id: responsibleId })
+    return mapTicket(dto)
+  },
+
+  patchPriority: async (id: string, adminPriority: string): Promise<Ticket> => {
+    const dto = await ticketsSource.patchPriority(id, { admin_priority: adminPriority })
+    return mapTicket(dto)
+  },
+
+  getStatusHistory: async (id: string): Promise<StatusHistoryEntry[]> => {
+    const dtos = await ticketsSource.getStatusHistory(id)
+    return dtos.map(mapStatusHistory)
+  },
 }
 
 export const ticketsRepository = IS_MOCK ? mockRepository : realRepository
 
-export type { Ticket, TicketStatus, TicketPriority, TicketProduct, CreateTicketInput, UpdateTicketInput } from "./types"
+export type { Ticket, TicketStatus, TicketPriority, TicketProduct, CreateTicketInput, UpdateTicketInput, StatusHistoryEntry } from "./types"
