@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MyProfile — Личный кабинет</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#1a0533;color:#e2d4f7}
+header{background:linear-gradient(90deg,#2d1157,#4a1a8a);padding:0 28px;height:64px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 20px rgba(74,26,138,.5)}
+.logo{font-size:22px;font-weight:800;color:#fff}
+.logo span{color:#c084fc}
+.user-chip{background:rgba(192,132,252,.15);border:1px solid rgba(192,132,252,.3);border-radius:20px;padding:6px 14px;font-size:13px;display:flex;align-items:center;gap:8px}
+.user-av{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#c084fc);display:flex;align-items:center;justify-content:center;font-size:13px}
+nav{background:#220d42;border-bottom:1px solid rgba(192,132,252,.2);display:flex;padding:0 28px}
+nav a{color:#9d6fc9;padding:12px 18px;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;text-decoration:none}
+nav a:hover,nav a.active{color:#c084fc;border-bottom-color:#c084fc}
+.page{display:none;padding:28px;max-width:1000px;margin:0 auto}
+.page.active{display:block}
+/* Profile card */
+.profile-banner{background:linear-gradient(135deg,#2d1157,#4a1a8a);border-radius:16px;padding:36px;margin-bottom:24px;display:flex;align-items:center;gap:24px;position:relative;overflow:hidden}
+.profile-banner::after{content:'';position:absolute;right:-60px;top:-60px;width:200px;height:200px;background:rgba(192,132,252,.08);border-radius:50%}
+.av-big{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#e879f9);display:flex;align-items:center;justify-content:center;font-size:36px;flex-shrink:0;border:3px solid rgba(192,132,252,.4)}
+.profile-banner h2{font-size:24px;font-weight:800;color:#fff}
+.profile-banner .subtitle{color:#c084fc;font-size:14px;margin-top:4px}
+.profile-banner .joined{color:#9d6fc9;font-size:12px;margin-top:8px}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.info-card{background:#220d42;border:1px solid rgba(192,132,252,.2);border-radius:12px;padding:20px}
+.info-card h3{font-size:12px;color:#9d6fc9;text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(192,132,252,.1)}
+.info-row:last-child{border-bottom:none}
+.info-row .label{font-size:13px;color:#9d6fc9}
+.info-row .val{font-size:13px;color:#e2d4f7;font-weight:500}
+/* Edit form */
+.edit-card{background:#220d42;border:1px solid rgba(192,132,252,.2);border-radius:12px;padding:28px;max-width:500px}
+.edit-card h2{color:#e2d4f7;margin-bottom:24px;font-size:20px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:12px;color:#9d6fc9;margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.field input,.field select{width:100%;background:#1a0533;border:1.5px solid rgba(192,132,252,.25);border-radius:8px;padding:10px 14px;font-size:14px;color:#e2d4f7;outline:none}
+.field input:focus{border-color:#c084fc}
+.save-btn{background:linear-gradient(90deg,#7c3aed,#c084fc);color:#fff;border:none;padding:12px 28px;border-radius:25px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px}
+/* Security */
+.sec-item{background:#220d42;border:1px solid rgba(192,132,252,.2);border-radius:10px;padding:18px 20px;display:flex;align-items:center;gap:16px;margin-bottom:12px}
+.sec-icon{width:42px;height:42px;border-radius:10px;background:rgba(192,132,252,.1);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.sec-title{font-size:14px;font-weight:600;margin-bottom:2px}
+.sec-desc{font-size:12px;color:#9d6fc9}
+.sec-action{margin-left:auto}
+.sec-btn{background:rgba(192,132,252,.15);border:1px solid rgba(192,132,252,.3);color:#c084fc;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px}
+.sec-btn:hover{background:rgba(192,132,252,.25)}
+.sec-btn.danger{background:rgba(248,113,113,.1);border-color:rgba(248,113,113,.3);color:#f87171}
+/* Success */
+.toast{position:fixed;bottom:24px;right:24px;background:#2d1157;border:1px solid #c084fc;border-radius:10px;padding:14px 20px;color:#e2d4f7;font-size:14px;display:none;animation:fadeIn .2s}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.badge-active{background:rgba(52,211,153,.15);color:#34d399;border:1px solid rgba(52,211,153,.3);padding:3px 10px;border-radius:10px;font-size:11px}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">My<span>Profile</span></div>
+  <div class="user-chip"><div class="user-av">А</div>Александр Н.</div>
+</header>
+<nav>
+  <a onclick="go('overview')" id="nav-overview" class="active">Обзор</a>
+  <a onclick="go('edit')" id="nav-edit">Редактировать</a>
+  <a onclick="go('security')" id="nav-security">Безопасность</a>
+</nav>
+
+<!-- OVERVIEW -->
+<div id="overview" class="page active">
+  <div class="profile-banner">
+    <div class="av-big">👤</div>
+    <div>
+      <h2>Александр Николаев</h2>
+      <div class="subtitle">alexandr.nikolaev@example.com</div>
+      <div class="joined">Участник с января 2024 · ID: USR-00482</div>
+      <div style="margin-top:10px"><span class="badge-active">✓ Аккаунт активен</span></div>
+    </div>
+  </div>
+  <div class="info-grid">
+    <div class="info-card">
+      <h3>Личные данные</h3>
+      <div class="info-row"><span class="label">Имя</span><span class="val">Александр</span></div>
+      <div class="info-row"><span class="label">Фамилия</span><span class="val">Николаев</span></div>
+      <div class="info-row"><span class="label">Телефон</span><span class="val">+7 999 123-45-67</span></div>
+      <div class="info-row"><span class="label">Дата рождения</span><span class="val">12.03.1990</span></div>
+    </div>
+    <div class="info-card">
+      <h3>Контактные данные</h3>
+      <div class="info-row"><span class="label">Email</span><span class="val">alexandr@example.com</span></div>
+      <div class="info-row"><span class="label">Город</span><span class="val">Москва</span></div>
+      <div class="info-row"><span class="label">Язык</span><span class="val">Русский</span></div>
+      <div class="info-row"><span class="label">Часовой пояс</span><span class="val">UTC+3</span></div>
+    </div>
+  </div>
+  <div class="info-card">
+    <h3>Подключённые сервисы</h3>
+    <div class="info-row"><span class="label">FreshMart</span><span class="val" style="color:#c084fc">Подключён</span></div>
+    <div class="info-row"><span class="label">FastPay</span><span class="val" style="color:#c084fc">Подключён</span></div>
+    <div class="info-row"><span class="label">GoExpress</span><span class="val" style="color:#9d6fc9">Не подключён</span></div>
+    <div class="info-row"><span class="label">DevBridge</span><span class="val" style="color:#9d6fc9">Не подключён</span></div>
+  </div>
+</div>
+
+<!-- EDIT -->
+<div id="edit" class="page">
+  <div class="edit-card">
+    <h2>✏️ Редактировать профиль</h2>
+    <div class="field"><label>Имя</label><input type="text" id="e-first" value="Александр"></div>
+    <div class="field"><label>Фамилия</label><input type="text" id="e-last" value="Николаев"></div>
+    <div class="field"><label>Email</label><input type="email" id="e-email" value="alexandr.nikolaev@example.com"></div>
+    <div class="field"><label>Телефон</label><input type="tel" id="e-phone" value="+7 999 123-45-67"></div>
+    <div class="field"><label>Город</label><input type="text" id="e-city" value="Москва"></div>
+    <div class="field"><label>Язык интерфейса</label>
+      <select><option>Русский</option><option>English</option></select>
+    </div>
+    <button class="save-btn" onclick="saveProfile()">Сохранить изменения</button>
+  </div>
+</div>
+
+<!-- SECURITY -->
+<div id="security" class="page">
+  <div class="sec-item">
+    <div class="sec-icon">🔐</div>
+    <div>
+      <div class="sec-title">Пароль</div>
+      <div class="sec-desc">Последнее изменение: 3 месяца назад</div>
+    </div>
+    <div class="sec-action"><button class="sec-btn" onclick="showToast('Ссылка для смены пароля отправлена на email')">Изменить</button></div>
+  </div>
+  <div class="sec-item">
+    <div class="sec-icon">📱</div>
+    <div>
+      <div class="sec-title">Двухфакторная аутентификация</div>
+      <div class="sec-desc">Статус: не подключена</div>
+    </div>
+    <div class="sec-action"><button class="sec-btn" onclick="showToast('Откроется настройка 2FA')">Подключить</button></div>
+  </div>
+  <div class="sec-item">
+    <div class="sec-icon">📋</div>
+    <div>
+      <div class="sec-title">Активные сессии</div>
+      <div class="sec-desc">2 устройства: Chrome / Windows, Safari / iPhone</div>
+    </div>
+    <div class="sec-action"><button class="sec-btn" onclick="showToast('Все другие сессии завершены')">Завершить другие</button></div>
+  </div>
+  <div class="sec-item">
+    <div class="sec-icon">🗑️</div>
+    <div>
+      <div class="sec-title">Удалить аккаунт</div>
+      <div class="sec-desc">Это действие необратимо</div>
+    </div>
+    <div class="sec-action"><button class="sec-btn danger" onclick="showToast('Для удаления подтвердите email')">Удалить</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function go(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(page).classList.add('active');
+  document.querySelectorAll('nav a').forEach(a=>a.classList.remove('active'));
+  const el=document.getElementById('nav-'+page);if(el)el.classList.add('active');
+}
+function saveProfile(){
+  showToast('✅ Профиль обновлён');
+  go('overview');
+}
+let toastTimer;
+function showToast(msg){
+  clearTimeout(toastTimer);
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.style.display='block';
+  toastTimer=setTimeout(()=>{t.style.display='none';},3000);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.kpiRow {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.chartsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.chartWithExport {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}

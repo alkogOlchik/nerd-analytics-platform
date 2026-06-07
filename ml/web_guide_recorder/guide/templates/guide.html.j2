@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Гайд: {{ guide.goal }}</title>
+    <style>
+      :root {
+        --bg: #f8fafc;
+        --fg: #0f172a;
+        --muted: #475569;
+        --card: #ffffff;
+        --border: #dbe3ee;
+        --accent: #0ea5e9;
+      }
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Tahoma, sans-serif;
+        background: linear-gradient(180deg, #eef6ff, var(--bg));
+        color: var(--fg);
+      }
+      .container {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+      .meta {
+        color: var(--muted);
+        margin-bottom: 20px;
+      }
+      .step {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 16px;
+        margin-bottom: 18px;
+      }
+      .step h2 { margin-top: 0; }
+      .shot {
+        width: 100%;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+      }
+      .arrow {
+        text-align: center;
+        color: var(--accent);
+        font-weight: 700;
+        margin: 0 0 16px;
+      }
+      code { background: #eef2f7; padding: 2px 6px; border-radius: 6px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Гайд: {{ guide.goal }}</h1>
+      <p class="meta">Сайт: <code>{{ guide.start_url }}</code></p>
+      {% for step in steps %}
+      <section class="step">
+        <h2>Шаг {{ step.number }}</h2>
+        <p><strong>URL:</strong> <code>{{ step.url }}</code></p>
+        <img class="shot" src="data:image/jpeg;base64,{{ step.screenshot_base64 }}" alt="Шаг {{ step.number }}" />
+        <p>{{ step.description }}</p>
+      </section>
+      {% if not loop.last %}
+      <div class="arrow">↓</div>
+      {% endif %}
+      {% endfor %}
+    </div>
+  </body>
+</html>

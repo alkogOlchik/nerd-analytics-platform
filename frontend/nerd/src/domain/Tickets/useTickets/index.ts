@@ -1,0 +1,13 @@
+import { useQuery } from "@tanstack/react-query"
+import { ticketsRepository } from "data/repositories/Tickets"
+import type { Ticket } from "data/repositories/Tickets"
+
+export const TICKETS_QUERY_KEY = ["tickets"] as const
+
+export const useTickets = () => {
+  return useQuery({
+    queryKey: TICKETS_QUERY_KEY,
+    queryFn: (): Promise<Ticket[]> => ticketsRepository.getTickets(),
+    staleTime: 60 * 1000,
+  })
+}

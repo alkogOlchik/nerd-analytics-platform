@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FastPay — Быстрые платежи</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#0f1923;color:#e8f0fe}
+header{background:linear-gradient(90deg,#1a3a6e,#2255c4);padding:0 28px;height:64px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 16px rgba(0,0,0,.4)}
+header .logo{font-size:22px;font-weight:800;letter-spacing:2px;color:#fff}
+header .logo span{color:#4da6ff}
+nav{display:flex;gap:2px;padding:0 28px;background:#131f2e}
+nav a{color:#7a9cc9;padding:12px 18px;font-size:13px;cursor:pointer;text-decoration:none;border-bottom:2px solid transparent}
+nav a:hover,nav a.active{color:#4da6ff;border-bottom-color:#4da6ff}
+.page{display:none;padding:28px;max-width:1000px;margin:0 auto}
+.page.active{display:block}
+/* Dashboard */
+.balance-card{background:linear-gradient(135deg,#1a3a6e,#2255c4);border-radius:16px;padding:32px;margin-bottom:24px;position:relative;overflow:hidden}
+.balance-card::after{content:'';position:absolute;right:-40px;top:-40px;width:180px;height:180px;background:rgba(255,255,255,.05);border-radius:50%}
+.balance-card .label{font-size:13px;color:#9ab5e0;margin-bottom:4px}
+.balance-card .amount{font-size:42px;font-weight:800;color:#fff;letter-spacing:1px}
+.balance-card .card-num{margin-top:12px;font-size:13px;color:#9ab5e0;letter-spacing:2px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px}
+.stat{background:#1b2535;border-radius:10px;padding:16px;border:1px solid #2a3a50}
+.stat .s-label{font-size:12px;color:#6b84a0;margin-bottom:4px}
+.stat .s-val{font-size:20px;font-weight:700}
+.stat.green .s-val{color:#3ddc84}
+.stat.red .s-val{color:#ff6b6b}
+.stat.blue .s-val{color:#4da6ff}
+.tx-list h3{font-size:15px;color:#9ab5e0;margin-bottom:12px}
+.tx-item{background:#1b2535;border-radius:8px;padding:14px 16px;display:flex;align-items:center;gap:14px;margin-bottom:8px;border:1px solid #2a3a50}
+.tx-icon{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.tx-icon.out{background:#3a1a1a}
+.tx-icon.in{background:#1a3a25}
+.tx-name{flex:1;font-size:14px;font-weight:600}
+.tx-time{font-size:12px;color:#5a7090;margin-top:2px}
+.tx-sum{font-size:15px;font-weight:700}
+.tx-sum.out{color:#ff6b6b}
+.tx-sum.in{color:#3ddc84}
+/* Send */
+.send-card{background:#1b2535;border-radius:14px;padding:28px;max-width:500px;margin:0 auto;border:1px solid #2a3a50}
+.send-card h2{margin-bottom:24px;font-size:22px;color:#e8f0fe}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:12px;color:#6b84a0;margin-bottom:6px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+.field input,.field select{width:100%;background:#0f1923;border:1.5px solid #2a3a50;border-radius:8px;padding:11px 14px;font-size:15px;color:#e8f0fe;outline:none}
+.field input:focus{border-color:#4da6ff}
+.amount-wrap{position:relative}
+.amount-wrap input{padding-right:40px;font-size:22px;font-weight:700}
+.amount-wrap .cur{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:#5a7090;font-size:16px}
+.contacts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.contact{background:#0f1923;border:1px solid #2a3a50;border-radius:8px;padding:8px;text-align:center;cursor:pointer}
+.contact:hover{border-color:#4da6ff}
+.contact .av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#2255c4,#4da6ff);display:flex;align-items:center;justify-content:center;font-size:16px;margin:0 auto 4px}
+.contact .cn{font-size:11px;color:#9ab5e0}
+.send-btn{background:linear-gradient(90deg,#2255c4,#4da6ff);color:#fff;border:none;width:100%;padding:14px;border-radius:25px;font-size:16px;font-weight:700;cursor:pointer;margin-top:8px}
+/* Confirm */
+.confirm-card{background:#1b2535;border-radius:14px;padding:32px;max-width:400px;margin:0 auto;text-align:center;border:1px solid #2a3a50}
+.confirm-card .big-emoji{font-size:64px;margin-bottom:16px}
+.confirm-card h2{margin-bottom:8px;font-size:20px}
+.confirm-card .detail{color:#7a9cc9;margin-bottom:24px;font-size:15px}
+.confirm-card .amount-big{font-size:36px;font-weight:800;color:#4da6ff;margin-bottom:20px}
+.row-btns{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.btn-cancel{background:transparent;border:1.5px solid #2a3a50;color:#9ab5e0;padding:12px;border-radius:25px;cursor:pointer;font-size:15px}
+.btn-ok{background:linear-gradient(90deg,#2255c4,#4da6ff);color:#fff;border:none;padding:12px;border-radius:25px;font-size:15px;font-weight:700;cursor:pointer}
+/* Success */
+.success-box{text-align:center;padding:60px 20px}
+.success-box .check{font-size:72px;margin-bottom:16px}
+.success-box h2{font-size:26px;color:#3ddc84;margin-bottom:8px}
+.success-box p{color:#7a9cc9;font-size:15px;margin-bottom:24px}
+.back-btn{background:linear-gradient(90deg,#2255c4,#4da6ff);color:#fff;border:none;padding:12px 28px;border-radius:25px;font-size:15px;cursor:pointer}
+/* History */
+.history-filter{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.filter-chip{background:#1b2535;border:1px solid #2a3a50;color:#9ab5e0;padding:6px 16px;border-radius:20px;cursor:pointer;font-size:13px}
+.filter-chip.active{background:#2255c4;border-color:#2255c4;color:#fff}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Fast<span>Pay</span></div>
+  <div style="font-size:13px;color:#9ab5e0">Баланс: <strong style="color:#4da6ff">₽ 24 500</strong></div>
+</header>
+<nav>
+  <a onclick="go('dashboard')" id="nav-dashboard" class="active">Главная</a>
+  <a onclick="go('send')" id="nav-send">Перевод</a>
+  <a onclick="go('history')" id="nav-history">История</a>
+</nav>
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="page active">
+  <div class="balance-card">
+    <div class="label">Основной счёт</div>
+    <div class="amount">₽ 24 500,00</div>
+    <div class="card-num">•••• •••• •••• 4821</div>
+  </div>
+  <div class="stats">
+    <div class="stat green"><div class="s-label">Получено (месяц)</div><div class="s-val">+₽ 85 000</div></div>
+    <div class="stat red"><div class="s-label">Отправлено (месяц)</div><div class="s-val">−₽ 42 300</div></div>
+    <div class="stat blue"><div class="s-label">Кешбэк</div><div class="s-val">₽ 312</div></div>
+  </div>
+  <div class="tx-list">
+    <h3>Последние операции</h3>
+    <div class="tx-item"><div class="tx-icon out">📤</div><div><div class="tx-name">Алексей П.</div><div class="tx-time">Сегодня, 14:32</div></div><div class="tx-sum out">−₽ 3 500</div></div>
+    <div class="tx-item"><div class="tx-icon in">💰</div><div><div class="tx-name">Зарплата ООО Ромашка</div><div class="tx-time">Вчера, 09:15</div></div><div class="tx-sum in">+₽ 55 000</div></div>
+    <div class="tx-item"><div class="tx-icon out">🛒</div><div><div class="tx-name">FreshMart</div><div class="tx-time">18 мая, 11:20</div></div><div class="tx-sum out">−₽ 780</div></div>
+    <div class="tx-item"><div class="tx-icon out">📤</div><div><div class="tx-name">Мария К.</div><div class="tx-time">17 мая, 18:05</div></div><div class="tx-sum out">−₽ 1 200</div></div>
+  </div>
+  <div style="margin-top:20px">
+    <button onclick="go('send')" style="background:linear-gradient(90deg,#2255c4,#4da6ff);color:#fff;border:none;padding:12px 28px;border-radius:25px;font-size:15px;font-weight:700;cursor:pointer">+ Новый перевод</button>
+  </div>
+</div>
+
+<!-- SEND -->
+<div id="send" class="page">
+  <div class="send-card">
+    <h2>💸 Перевод</h2>
+    <div class="field"><label>Быстрый выбор получателя</label>
+      <div class="contacts">
+        <div class="contact" onclick="setRecipient('Алексей П.')"><div class="av">А</div><div class="cn">Алексей</div></div>
+        <div class="contact" onclick="setRecipient('Мария К.')"><div class="av">М</div><div class="cn">Мария</div></div>
+        <div class="contact" onclick="setRecipient('Сергей Д.')"><div class="av">С</div><div class="cn">Сергей</div></div>
+        <div class="contact" onclick="setRecipient('Новый +')"><div class="av">+</div><div class="cn">Новый</div></div>
+      </div>
+    </div>
+    <div class="field"><label>Получатель (телефон или карта)</label><input type="text" id="recipient" placeholder="+7 900 000-00-00" value="Алексей П."></div>
+    <div class="field"><label>Сумма</label><div class="amount-wrap"><input type="number" id="amount" placeholder="0" value="1500"><span class="cur">₽</span></div></div>
+    <div class="field"><label>Комментарий</label><input type="text" id="comment" placeholder="За обед" value="За обед"></div>
+    <div class="field"><label>Счёт списания</label>
+      <select><option>Основной •••• 4821 — ₽ 24 500</option><option>Накопительный •••• 9032 — ₽ 8 200</option></select>
+    </div>
+    <button class="send-btn" onclick="confirmTransfer()">Продолжить →</button>
+  </div>
+</div>
+
+<!-- CONFIRM -->
+<div id="confirm" class="page">
+  <div class="confirm-card">
+    <div class="big-emoji">🔐</div>
+    <h2>Подтверждение перевода</h2>
+    <div class="detail">Получатель: <strong id="c-recipient" style="color:#e8f0fe"></strong></div>
+    <div class="amount-big" id="c-amount"></div>
+    <div class="detail" style="margin-bottom:24px">Комиссия: <strong style="color:#3ddc84">0 ₽</strong><br>На счёт поступит указанная сумма</div>
+    <div class="row-btns">
+      <button class="btn-cancel" onclick="go('send')">Отмена</button>
+      <button class="btn-ok" onclick="completeSend()">Отправить ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUCCESS -->
+<div id="success" class="page">
+  <div class="success-box">
+    <div class="check">✅</div>
+    <h2>Перевод выполнен!</h2>
+    <p>Деньги успешно переведены.<br>Операция: #<span id="tx-id"></span></p>
+    <button class="back-btn" onclick="go('dashboard')">На главную</button>
+  </div>
+</div>
+
+<!-- HISTORY -->
+<div id="history" class="page">
+  <div class="history-filter">
+    <div class="filter-chip active">Все</div>
+    <div class="filter-chip">Входящие</div>
+    <div class="filter-chip">Исходящие</div>
+    <div class="filter-chip">Май 2026</div>
+  </div>
+  <div class="tx-list">
+    <div class="tx-item"><div class="tx-icon out">📤</div><div><div class="tx-name">Алексей П.</div><div class="tx-time">Сегодня, 14:32</div></div><div class="tx-sum out">−₽ 3 500</div></div>
+    <div class="tx-item"><div class="tx-icon in">💰</div><div><div class="tx-name">Зарплата ООО Ромашка</div><div class="tx-time">Вчера, 09:15</div></div><div class="tx-sum in">+₽ 55 000</div></div>
+    <div class="tx-item"><div class="tx-icon out">🛒</div><div><div class="tx-name">FreshMart</div><div class="tx-time">18 мая, 11:20</div></div><div class="tx-sum out">−₽ 780</div></div>
+    <div class="tx-item"><div class="tx-icon out">📤</div><div><div class="tx-name">Мария К.</div><div class="tx-time">17 мая, 18:05</div></div><div class="tx-sum out">−₽ 1 200</div></div>
+    <div class="tx-item"><div class="tx-icon in">💸</div><div><div class="tx-name">Возврат GoExpress</div><div class="tx-time">15 мая, 16:40</div></div><div class="tx-sum in">+₽ 450</div></div>
+    <div class="tx-item"><div class="tx-icon out">💳</div><div><div class="tx-name">Подписка DataPulse</div><div class="tx-time">1 мая, 00:05</div></div><div class="tx-sum out">−₽ 990</div></div>
+  </div>
+</div>
+
+<script>
+function setRecipient(n){ document.getElementById('recipient').value = n; }
+function confirmTransfer(){
+  const r = document.getElementById('recipient').value;
+  const a = document.getElementById('amount').value;
+  if(!r||!a){alert('Заполните получателя и сумму');return;}
+  document.getElementById('c-recipient').textContent = r;
+  document.getElementById('c-amount').textContent = '₽ ' + Number(a).toLocaleString('ru');
+  go('confirm');
+}
+function completeSend(){
+  document.getElementById('tx-id').textContent = Math.floor(100000+Math.random()*899999);
+  go('success');
+}
+function go(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(page).classList.add('active');
+  document.querySelectorAll('nav a').forEach(a=>a.classList.remove('active'));
+  const el = document.getElementById('nav-'+page);
+  if(el) el.classList.add('active');
+}
+</script>
+</body>
+</html>

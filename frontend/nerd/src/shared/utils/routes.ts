@@ -1,0 +1,16 @@
+export const routes = {
+    main: "/",
+    login: "/login",
+    register: "/register",
+    assistant: "/assistant",
+    tickets: "/tickets",
+    notifications: "/notifications",
+    profile: "/profile",
+    settings: "/settings",
+    analytics: "/analytics",
+    createTicket: "/create-ticket",
+    feedback: "/feedback",
+    ticketStatus: "/ticket-status",
+    myReviews: "/my-reviews",
+    guestTicketTrack: "/ticket-track/:token",
+} as const

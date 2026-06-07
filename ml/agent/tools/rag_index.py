@@ -1,0 +1,212 @@
+"""CLI to ingest local documents into the Chroma collection used by `rag_search`.
+
+Usage:
+    python -m agent.tools.rag_index --source ./docs
+    python -m agent.tools.rag_index --source ./docs --reset
+
+Supported file types: .md, .markdown, .txt, .rst.
+"""
+
+from __future__ import annotations
+
+import argparse
+import logging
+import pickle
+import re
+import sys
+from pathlib import Path
+from typing import Iterable, Optional
+
+from langchain_chroma import Chroma
+from langchain_core.documents import Document
+from langchain_ollama import OllamaEmbeddings
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from rank_bm25 import BM25Okapi
+
+from agent.config import settings
+
+BM25_INDEX_FILENAME = "bm25_index.pkl"
+
+
+def _tokenize(text: str) -> list[str]:
+    return re.findall(r"\w+", text.lower())
+
+logger = logging.getLogger(__name__)
+
+SUPPORTED_EXTS = {".md", ".markdown", ".txt", ".rst"}
+DEFAULT_SOURCE = Path(__file__).resolve().parents[2] / "docs"
+CHUNK_SIZE = 500
+CHUNK_OVERLAP = 80
+
+
+def _iter_files(source: Path) -> Iterable[Path]:
+    if source.is_file():
+        if source.suffix.lower() in SUPPORTED_EXTS:
+            yield source
+        return
+    for path in sorted(source.rglob("*")):
+        if path.is_file() and path.suffix.lower() in SUPPORTED_EXTS:
+            yield path
+
+
+def _load_documents(source: Path) -> list[Document]:
+    docs: list[Document] = []
+    for path in _iter_files(source):
+        try:
+            text = path.read_text(encoding="utf-8", errors="ignore").strip()
+        except OSError as exc:
+            logger.warning("Skip %s: %s", path, exc)
+            continue
+        if not text:
+            continue
+        docs.append(
+            Document(
+                page_content=text,
+                metadata={
+                    "source": str(path),
+                    "filename": path.name,
+                    "ext": path.suffix.lower(),
+                },
+            )
+        )
+    return docs
+
+
+def _build_vectorstore(embeddings: OllamaEmbeddings, persist_dir: Path) -> Chroma:
+    return Chroma(
+        collection_name=settings.chroma_collection_name,
+        persist_directory=str(persist_dir),
+        embedding_function=embeddings,
+    )
+
+
+def index_directory(
+    source: Path,
+    *,
+    reset: bool = False,
+    persist_directory: Optional[Path] = None,
+) -> dict:
+    """Read documents, chunk them and add to Chroma. Returns a summary dict."""
+    if not source.exists():
+        return {
+            "ok": False,
+            "error": f"Source does not exist: {source}",
+            "indexed_chunks": 0,
+        }
+
+    documents = _load_documents(source)
+    if not documents:
+        return {
+            "ok": False,
+            "error": f"No supported documents under {source}. "
+            f"Allowed extensions: {sorted(SUPPORTED_EXTS)}",
+            "indexed_chunks": 0,
+        }
+
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=CHUNK_SIZE,
+        chunk_overlap=CHUNK_OVERLAP,
+        separators=["\n## ", "\n### ", "\n\n", "\n", ". ", " ", ""],
+    )
+    raw_chunks = splitter.split_documents(documents)
+
+    # Prepend the document title (first H1 line) to every chunk so that
+    # the product name is present in every chunk embedding, improving
+    # recall on short queries like "NerdShop что это?".
+    title_cache: dict[str, str] = {}
+    for doc in documents:
+        src = doc.metadata.get("source", "")
+        first_line = doc.page_content.lstrip().split("\n")[0].lstrip("#").strip()
+        if first_line:
+            title_cache[src] = first_line
+
+    chunks: list[Document] = []
+    for chunk in raw_chunks:
+        src = chunk.metadata.get("source", "")
+        title = title_cache.get(src, "")
+        if title and not chunk.page_content.startswith(title):
+            chunk = Document(
+                page_content=f"[{title}]\n{chunk.page_content}",
+                metadata=chunk.metadata,
+            )
+        chunks.append(chunk)
+    if not chunks:
+        return {"ok": False, "error": "Splitting produced 0 chunks", "indexed_chunks": 0}
+
+    persist_dir = persist_directory or Path(settings.chroma_persist_directory)
+    persist_dir.mkdir(parents=True, exist_ok=True)
+
+    embeddings = OllamaEmbeddings(
+        model=settings.ollama_embeddings_model,
+        base_url=settings.ollama_base_url,
+    )
+
+    vectorstore = _build_vectorstore(embeddings, persist_dir)
+    if reset:
+        try:
+            vectorstore.delete_collection()
+            logger.info("Dropped existing collection '%s'", settings.chroma_collection_name)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Drop collection failed (continuing): %s", exc)
+        vectorstore = _build_vectorstore(embeddings, persist_dir)
+
+    vectorstore.add_documents(chunks)
+
+    # Build and persist BM25 index from the same chunks.
+    corpus = [_tokenize(c.page_content) for c in chunks]
+    bm25 = BM25Okapi(corpus)
+    bm25_payload = {
+        "bm25": bm25,
+        "chunks": [
+            {"content": c.page_content, "metadata": c.metadata} for c in chunks
+        ],
+    }
+    bm25_path = persist_dir / BM25_INDEX_FILENAME
+    with bm25_path.open("wb") as fh:
+        pickle.dump(bm25_payload, fh)
+    logger.info("BM25 index saved to %s (%d chunks)", bm25_path, len(chunks))
+
+    return {
+        "ok": True,
+        "docs": len(documents),
+        "indexed_chunks": len(chunks),
+        "persist_dir": str(persist_dir),
+        "collection": settings.chroma_collection_name,
+        "embeddings_model": settings.ollama_embeddings_model,
+        "bm25_index": str(bm25_path),
+    }
+
+
+def _setup_logging(verbose: bool) -> None:
+    logging.basicConfig(
+        level=logging.DEBUG if verbose else logging.INFO,
+        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    )
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Index documents into Chroma")
+    parser.add_argument(
+        "--source",
+        type=Path,
+        default=DEFAULT_SOURCE,
+        help="Path to a file or directory to index (default: ./docs)",
+    )
+    parser.add_argument(
+        "--reset",
+        action="store_true",
+        help="Drop the existing collection before indexing",
+    )
+    parser.add_argument("--verbose", action="store_true")
+    args = parser.parse_args()
+
+    _setup_logging(args.verbose)
+    logger.info("Indexing %s (reset=%s)", args.source, args.reset)
+    result = index_directory(args.source, reset=args.reset)
+    print(result)
+    if not result.get("ok"):
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

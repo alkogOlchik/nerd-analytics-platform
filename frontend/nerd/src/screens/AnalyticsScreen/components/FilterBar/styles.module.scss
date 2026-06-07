@@ -1,0 +1,85 @@
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fieldLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-secondary, #888);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.input {
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text-white, #fff);
+  font-size: 13px;
+  outline: none;
+  min-width: 140px;
+
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.25);
+  }
+
+  &:focus {
+    border-color: rgba(124, 92, 255, 0.5);
+    background: rgba(124, 92, 255, 0.06);
+  }
+
+  &[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.6);
+  }
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.btnReset,
+.btnSave {
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--color-text-secondary, #888);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--color-text-white, #fff);
+  }
+}
+
+.btnSave {
+  border-color: rgba(124, 92, 255, 0.3);
+  color: #c4b5fd;
+
+  &:hover {
+    background: rgba(124, 92, 255, 0.12);
+    border-color: rgba(124, 92, 255, 0.5);
+  }
+}

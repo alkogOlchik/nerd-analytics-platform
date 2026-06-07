@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DevBridge — API Platform</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Courier New',monospace;background:#0d1117;color:#c9d1d9}
+header{background:#161b22;border-bottom:1px solid #30363d;padding:0 28px;height:60px;display:flex;align-items:center;justify-content:space-between}
+.logo{font-size:20px;font-weight:700;color:#58a6ff}
+.logo span{color:#3fb950}
+.version-badge{background:#21262d;border:1px solid #30363d;padding:4px 10px;border-radius:12px;font-size:12px;color:#8b949e}
+nav{background:#161b22;border-bottom:1px solid #30363d;display:flex;padding:0 28px}
+nav a{color:#8b949e;padding:12px 16px;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;text-decoration:none}
+nav a:hover,nav a.active{color:#58a6ff;border-bottom-color:#58a6ff}
+.page{display:none;padding:28px;max-width:1100px;margin:0 auto}
+.page.active{display:block}
+/* Hero */
+.hero{background:linear-gradient(135deg,#161b22,#1f2937);border:1px solid #30363d;border-radius:12px;padding:40px;margin-bottom:28px}
+.hero h2{font-size:30px;font-weight:700;color:#f0f6fc;margin-bottom:8px}
+.hero p{color:#8b949e;margin-bottom:20px;line-height:1.6}
+.hero-btns{display:flex;gap:12px}
+.btn-primary{background:#238636;color:#fff;border:none;padding:10px 20px;border-radius:6px;font-size:14px;cursor:pointer;font-weight:600}
+.btn-secondary{background:transparent;color:#58a6ff;border:1px solid #30363d;padding:10px 20px;border-radius:6px;font-size:14px;cursor:pointer}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px}
+.stat-card{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:20px}
+.stat-card .s-num{font-size:28px;font-weight:700;color:#58a6ff}
+.stat-card .s-label{font-size:12px;color:#8b949e;margin-top:4px}
+/* Docs */
+.docs-layout{display:grid;grid-template-columns:220px 1fr;gap:20px}
+.sidebar{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px}
+.sidebar h3{font-size:12px;color:#8b949e;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+.sidebar a{display:block;color:#c9d1d9;padding:6px 10px;border-radius:4px;font-size:13px;cursor:pointer;text-decoration:none;margin-bottom:2px}
+.sidebar a:hover,.sidebar a.active{background:#21262d;color:#58a6ff}
+.doc-content{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:28px}
+.doc-content h2{font-size:22px;color:#f0f6fc;margin-bottom:16px}
+.doc-content h3{font-size:15px;color:#58a6ff;margin:20px 0 8px}
+.doc-content p{color:#8b949e;line-height:1.7;margin-bottom:12px;font-family:'Segoe UI',sans-serif;font-size:14px}
+.code-block{background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:16px;margin:12px 0;overflow-x:auto}
+.code-block code{font-size:13px;color:#e6edf3;line-height:1.6}
+.param-table{width:100%;border-collapse:collapse;font-size:13px;font-family:'Segoe UI',sans-serif}
+.param-table th{background:#21262d;color:#8b949e;padding:8px 12px;text-align:left;font-size:11px;text-transform:uppercase}
+.param-table td{padding:10px 12px;border-top:1px solid #21262d;color:#c9d1d9}
+.badge-req{background:#da3633;color:#fff;padding:2px 6px;border-radius:4px;font-size:10px}
+.badge-opt{background:#21262d;color:#8b949e;padding:2px 6px;border-radius:4px;font-size:10px}
+/* Keys */
+.keys-card{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:24px;max-width:640px}
+.keys-card h2{color:#f0f6fc;margin-bottom:20px}
+.key-item{background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:14px 16px;display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.key-name{flex:1;font-size:14px;color:#c9d1d9}
+.key-val{font-size:13px;color:#3fb950;letter-spacing:1px;font-family:'Courier New',monospace}
+.key-date{font-size:12px;color:#8b949e}
+.key-actions{display:flex;gap:8px}
+.btn-sm{background:#21262d;border:1px solid #30363d;color:#8b949e;padding:5px 12px;border-radius:4px;font-size:12px;cursor:pointer}
+.btn-sm:hover{color:#f85149;border-color:#f85149}
+.new-key-form{background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:16px;margin-top:16px}
+.new-key-form h3{color:#8b949e;font-size:13px;margin-bottom:12px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:11px;color:#8b949e;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+.field input,.field select{width:100%;background:#161b22;border:1px solid #30363d;border-radius:4px;padding:8px 10px;font-size:13px;color:#c9d1d9;outline:none;font-family:'Courier New',monospace}
+.field input:focus{border-color:#58a6ff}
+.create-btn{background:#238636;color:#fff;border:none;padding:8px 20px;border-radius:6px;font-size:13px;cursor:pointer}
+/* Success */
+.success-panel{background:#0f2a1a;border:1px solid #2ea043;border-radius:8px;padding:24px;margin-top:16px;display:none}
+.success-panel .key-generated{font-size:14px;color:#3fb950;font-family:'Courier New',monospace;word-break:break-all;margin:8px 0}
+/* Playground */
+.playground{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:24px}
+.playground h2{color:#f0f6fc;margin-bottom:20px}
+.req-builder{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.pane{background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:16px}
+.pane h3{font-size:12px;color:#8b949e;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+.pane textarea{width:100%;background:transparent;border:none;color:#e6edf3;font-size:13px;font-family:'Courier New',monospace;resize:vertical;min-height:200px;outline:none;line-height:1.6}
+.send-row{display:flex;gap:10px;align-items:center;margin:12px 0}
+.method-select{background:#21262d;border:1px solid #30363d;color:#3fb950;padding:8px 12px;border-radius:4px;font-size:13px;font-family:'Courier New',monospace}
+.url-input{flex:1;background:#0d1117;border:1px solid #30363d;border-radius:4px;padding:8px 12px;font-size:13px;color:#c9d1d9;font-family:'Courier New',monospace;outline:none}
+.url-input:focus{border-color:#58a6ff}
+.run-btn{background:#1f6feb;color:#fff;border:none;padding:8px 20px;border-radius:4px;font-size:13px;cursor:pointer}
+.status-200{color:#3fb950}.status-4xx{color:#f85149}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Dev<span>Bridge</span> <span style="font-size:14px;color:#8b949e;font-weight:400">API Platform</span></div>
+  <div class="version-badge">v2.4.1</div>
+</header>
+<nav>
+  <a onclick="go('home')" id="nav-home" class="active">Обзор</a>
+  <a onclick="go('docs')" id="nav-docs">Документация</a>
+  <a onclick="go('keys')" id="nav-keys">API Ключи</a>
+  <a onclick="go('playground')" id="nav-playground">Playground</a>
+</nav>
+
+<!-- HOME -->
+<div id="home" class="page active">
+  <div class="hero">
+    <h2>REST API для разработчиков</h2>
+    <p>DevBridge — платформа интеграций. Подключайте сервисы, управляйте webhook-ами<br>и тестируйте запросы в браузере без лишних настроек.</p>
+    <div class="hero-btns">
+      <button class="btn-primary" onclick="go('docs')">Начать интеграцию</button>
+      <button class="btn-secondary" onclick="go('playground')">Попробовать API →</button>
+    </div>
+  </div>
+  <div class="stats-row">
+    <div class="stat-card"><div class="s-num">99.97%</div><div class="s-label">SLA за 30 дней</div></div>
+    <div class="stat-card"><div class="s-num">2.4 млн</div><div class="s-label">Запросов сегодня</div></div>
+    <div class="stat-card"><div class="s-num">38 ms</div><div class="s-label">Медианная задержка</div></div>
+  </div>
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:24px">
+    <h3 style="color:#f0f6fc;margin-bottom:16px;font-size:16px">Быстрый старт</h3>
+    <div class="code-block"><code>curl -X GET https://api.devbridge.io/v2/status \<br>  -H "Authorization: Bearer YOUR_API_KEY" \<br>  -H "Content-Type: application/json"</code></div>
+    <div style="margin-top:16px;display:flex;gap:12px">
+      <button class="btn-primary" onclick="go('keys')">Получить API ключ</button>
+      <button class="btn-secondary" onclick="go('docs')">Читать документацию</button>
+    </div>
+  </div>
+</div>
+
+<!-- DOCS -->
+<div id="docs" class="page">
+  <div class="docs-layout">
+    <div class="sidebar">
+      <h3>Разделы</h3>
+      <a onclick="showDoc('intro')" id="doc-intro" class="active">Введение</a>
+      <a onclick="showDoc('auth')" id="doc-auth">Авторизация</a>
+      <a onclick="showDoc('webhooks')" id="doc-webhooks">Webhooks</a>
+      <a onclick="showDoc('errors')" id="doc-errors">Ошибки</a>
+    </div>
+    <div id="doc-body" class="doc-content">
+      <!-- filled by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- KEYS -->
+<div id="keys" class="page">
+  <div class="keys-card">
+    <h2 style="color:#f0f6fc">🔑 API Ключи</h2>
+    <div class="key-item">
+      <div>
+        <div class="key-name">Production Key</div>
+        <div class="key-val">db_live_••••••••••••4f2a</div>
+        <div class="key-date">Создан 01.01.2026 · Истекает 01.01.2027</div>
+      </div>
+      <div class="key-actions"><button class="btn-sm">Отозвать</button></div>
+    </div>
+    <div class="key-item">
+      <div>
+        <div class="key-name">Staging Key</div>
+        <div class="key-val">db_test_••••••••••••9c18</div>
+        <div class="key-date">Создан 15.03.2026 · Без ограничений</div>
+      </div>
+      <div class="key-actions"><button class="btn-sm">Отозвать</button></div>
+    </div>
+    <div class="new-key-form">
+      <h3>Создать новый ключ</h3>
+      <div class="field"><label>Название</label><input type="text" id="key-name" placeholder="my-integration" value="my-integration"></div>
+      <div class="field"><label>Окружение</label>
+        <select id="key-env"><option value="test">test</option><option value="live">live</option></select>
+      </div>
+      <button class="create-btn" onclick="createKey()">Создать ключ</button>
+    </div>
+    <div class="success-panel" id="key-success">
+      <div style="font-size:13px;color:#3fb950;margin-bottom:4px">✅ Ключ создан. Сохраните — показывается один раз:</div>
+      <div class="key-generated" id="new-key-val"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PLAYGROUND -->
+<div id="playground" class="page">
+  <div class="playground">
+    <h2>⚡ API Playground</h2>
+    <div class="send-row">
+      <select class="method-select" id="req-method">
+        <option>GET</option><option>POST</option><option>PUT</option><option>DELETE</option>
+      </select>
+      <input class="url-input" type="text" id="req-url" value="/v2/users" placeholder="/v2/endpoint">
+      <button class="run-btn" onclick="sendRequest()">Отправить ▶</button>
+    </div>
+    <div class="req-builder">
+      <div class="pane">
+        <h3>Тело запроса</h3>
+        <textarea id="req-body" placeholder='{"key": "value"}'>{
+  "limit": 20,
+  "offset": 0
+}</textarea>
+      </div>
+      <div class="pane">
+        <h3>Ответ <span id="resp-status" style="margin-left:8px"></span></h3>
+        <textarea id="resp-body" readonly placeholder="// Ответ появится здесь..."></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const DOCS = {
+  intro: `<h2>Введение</h2>
+<p>DevBridge API использует REST-архитектуру. Все запросы и ответы используют формат JSON.</p>
+<h3>Base URL</h3>
+<div class="code-block"><code>https://api.devbridge.io/v2</code></div>
+<h3>Версионирование</h3>
+<p>Версия API указывается в URL. Текущая стабильная версия — <strong style="color:#58a6ff">v2</strong>. Версия v1 доступна до 01.01.2027.</p>
+<h3>Лимиты</h3>
+<table class="param-table"><thead><tr><th>Тариф</th><th>Запросов / мин</th><th>Запросов / день</th></tr></thead>
+<tbody><tr><td>Free</td><td>60</td><td>10 000</td></tr><tr><td>Pro</td><td>600</td><td>500 000</td></tr><tr><td>Enterprise</td><td>без ограничений</td><td>без ограничений</td></tr></tbody></table>`,
+  auth: `<h2>Авторизация</h2>
+<p>Все запросы к API требуют Bearer-токен в заголовке Authorization.</p>
+<h3>Заголовок</h3>
+<div class="code-block"><code>Authorization: Bearer YOUR_API_KEY</code></div>
+<h3>Параметры ключа</h3>
+<table class="param-table"><thead><tr><th>Поле</th><th>Тип</th><th>Описание</th></tr></thead>
+<tbody>
+<tr><td>name</td><td><span class="badge-req">required</span></td><td>Произвольное имя ключа</td></tr>
+<tr><td>env</td><td><span class="badge-req">required</span></td><td>test или live</td></tr>
+<tr><td>expires_at</td><td><span class="badge-opt">optional</span></td><td>ISO 8601, по умолчанию без срока</td></tr>
+</tbody></table>`,
+  webhooks: `<h2>Webhooks</h2>
+<p>DevBridge отправляет POST-запросы на ваш URL при наступлении событий.</p>
+<h3>Пример события</h3>
+<div class="code-block"><code>POST https://your-server.com/webhook<br>Content-Type: application/json<br><br>{<br>  "event": "payment.completed",<br>  "timestamp": "2026-05-20T14:32:00Z",<br>  "data": { "id": "pay_abc123", "amount": 3500 }<br>}</code></div>
+<h3>Доступные события</h3>
+<table class="param-table"><thead><tr><th>Событие</th><th>Описание</th></tr></thead>
+<tbody>
+<tr><td>user.created</td><td>Новый пользователь</td></tr>
+<tr><td>payment.completed</td><td>Платёж прошёл</td></tr>
+<tr><td>payment.failed</td><td>Платёж отклонён</td></tr>
+<tr><td>subscription.cancelled</td><td>Подписка отменена</td></tr>
+</tbody></table>`,
+  errors: `<h2>Коды ошибок</h2>
+<p>API возвращает стандартные HTTP-коды с телом ошибки в JSON.</p>
+<h3>Формат ошибки</h3>
+<div class="code-block"><code>{ "error": "unauthorized", "message": "Invalid API key", "status": 401 }</code></div>
+<h3>Справочник кодов</h3>
+<table class="param-table"><thead><tr><th>Код</th><th>Описание</th></tr></thead>
+<tbody>
+<tr><td style="color:#3fb950">200</td><td>OK — запрос выполнен</td></tr>
+<tr><td style="color:#f85149">400</td><td>Bad Request — ошибка в теле запроса</td></tr>
+<tr><td style="color:#f85149">401</td><td>Unauthorized — неверный API ключ</td></tr>
+<tr><td style="color:#f85149">429</td><td>Too Many Requests — превышен лимит</td></tr>
+<tr><td style="color:#f85149">500</td><td>Internal Server Error — ошибка сервера</td></tr>
+</tbody></table>`
+};
+
+const MOCK_RESPONSES = {
+  '/v2/users': {status:200, body:{data:[{id:'usr_1',name:'Иван Петров',email:'ivan@example.com'},{id:'usr_2',name:'Мария К.',email:'maria@example.com'}],total:2,limit:20,offset:0}},
+  '/v2/status': {status:200, body:{status:'operational',uptime:'99.97%',latency_ms:38}},
+};
+
+function showDoc(key){
+  document.querySelectorAll('.sidebar a').forEach(a=>a.classList.remove('active'));
+  document.getElementById('doc-'+key).classList.add('active');
+  document.getElementById('doc-body').innerHTML = DOCS[key];
+}
+function go(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(page).classList.add('active');
+  document.querySelectorAll('nav a').forEach(a=>a.classList.remove('active'));
+  const el=document.getElementById('nav-'+page);if(el)el.classList.add('active');
+  if(page==='docs') showDoc('intro');
+}
+function createKey(){
+  const name=document.getElementById('key-name').value.trim()||'my-key';
+  const env=document.getElementById('key-env').value;
+  const rand = Math.random().toString(36).slice(2,18);
+  document.getElementById('new-key-val').textContent = `db_${env}_${rand}`;
+  document.getElementById('key-success').style.display='block';
+}
+function sendRequest(){
+  const url = document.getElementById('req-url').value.trim();
+  const mock = MOCK_RESPONSES[url];
+  let status, body;
+  if(mock){status=mock.status;body=mock.body;}
+  else{status=404;body={error:'not_found',message:'Endpoint not found in playground',status:404};}
+  const el = document.getElementById('resp-status');
+  el.textContent=status;el.className=status===200?'status-200':'status-4xx';
+  document.getElementById('resp-body').value=JSON.stringify(body,null,2);
+}
+go('home');
+</script>
+</body>
+</html>

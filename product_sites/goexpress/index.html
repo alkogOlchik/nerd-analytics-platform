@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GoExpress — Доставка</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#fff8f3;color:#1c1008}
+header{background:linear-gradient(90deg,#e85d04,#f48c06);color:#fff;height:62px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;box-shadow:0 3px 12px rgba(232,93,4,.3)}
+.logo{font-size:24px;font-weight:900;letter-spacing:-1px}
+.logo span{color:#ffe0b2}
+.status-dot{width:9px;height:9px;background:#4caf50;border-radius:50%;display:inline-block;margin-right:6px}
+nav{background:#fff;border-bottom:2px solid #ffe0b2;display:flex;gap:0;padding:0 24px}
+nav a{color:#888;padding:13px 18px;font-size:14px;cursor:pointer;font-weight:600;border-bottom:3px solid transparent;margin-bottom:-2px}
+nav a.active{color:#e85d04;border-bottom-color:#e85d04}
+.page{display:none;padding:24px;max-width:960px;margin:0 auto}
+.page.active{display:block}
+/* Hero */
+.hero{background:linear-gradient(135deg,#e85d04,#f48c06);color:#fff;border-radius:16px;padding:36px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:center}
+.hero h2{font-size:28px;font-weight:900;margin-bottom:8px}
+.hero p{font-size:15px;opacity:.9;margin-bottom:20px}
+.hero button{background:#fff;color:#e85d04;border:none;padding:12px 24px;border-radius:25px;font-weight:800;cursor:pointer;font-size:15px}
+.hero-emoji{font-size:80px}
+/* Form */
+.order-form{background:#fff;border-radius:14px;padding:28px;box-shadow:0 4px 20px rgba(0,0,0,.08)}
+.order-form h2{color:#e85d04;margin-bottom:20px;font-size:20px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;font-weight:700;color:#666;margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px}
+.field input,.field select,.field textarea{width:100%;border:1.5px solid #f0d0bb;border-radius:8px;padding:10px 13px;font-size:14px;outline:none;background:#fff}
+.field input:focus{border-color:#e85d04}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.size-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:6px}
+.size-opt{border:2px solid #f0d0bb;border-radius:10px;padding:12px;text-align:center;cursor:pointer;transition:.15s}
+.size-opt:hover,.size-opt.active{border-color:#e85d04;background:#fff5ef}
+.size-opt .sz-icon{font-size:24px}
+.size-opt .sz-name{font-size:12px;font-weight:700;margin-top:4px;color:#333}
+.size-opt .sz-price{font-size:13px;color:#e85d04;font-weight:600}
+.price-row{background:#fff5ef;border-radius:10px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;margin:16px 0}
+.price-row .price{font-size:22px;font-weight:800;color:#e85d04}
+.submit-btn{background:linear-gradient(90deg,#e85d04,#f48c06);color:#fff;border:none;width:100%;padding:14px;border-radius:25px;font-size:16px;font-weight:700;cursor:pointer}
+/* Track */
+.track-box{background:#fff;border-radius:14px;padding:28px;box-shadow:0 4px 20px rgba(0,0,0,.08);max-width:580px;margin:0 auto}
+.track-input-row{display:flex;gap:10px;margin-bottom:24px}
+.track-input-row input{flex:1;border:2px solid #f0d0bb;border-radius:8px;padding:10px 14px;font-size:15px;outline:none}
+.track-input-row button{background:#e85d04;color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-weight:700}
+.status-timeline{padding-left:12px;border-left:3px solid #f0d0bb}
+.step{display:flex;gap:16px;margin-bottom:20px;position:relative}
+.step::before{content:'';width:14px;height:14px;border-radius:50%;background:#f0d0bb;position:absolute;left:-20px;top:4px}
+.step.done::before{background:#e85d04}
+.step.active-step::before{background:#4caf50;box-shadow:0 0 0 4px rgba(76,175,80,.2)}
+.step .st-label{font-size:13px;color:#888;margin-bottom:2px}
+.step .st-val{font-size:15px;font-weight:600}
+.courier-card{background:#fff5ef;border-radius:10px;padding:16px;display:flex;align-items:center;gap:16px;margin-top:20px;border:1px solid #f0d0bb}
+.courier-av{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#e85d04,#f48c06);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+.courier-name{font-weight:700;margin-bottom:2px}
+.courier-eta{color:#e85d04;font-size:13px;font-weight:600}
+/* Success */
+.success-box{text-align:center;padding:48px 20px}
+.success-box .check{font-size:72px}
+.success-box h2{font-size:26px;font-weight:800;color:#e85d04;margin:12px 0 8px}
+.success-box p{color:#666;margin-bottom:24px}
+.track-btn{background:linear-gradient(90deg,#e85d04,#f48c06);color:#fff;border:none;padding:12px 28px;border-radius:25px;font-size:15px;font-weight:700;cursor:pointer}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Go<span>Express</span></div>
+  <div style="font-size:13px"><span class="status-dot"></span>Курьеры онлайн</div>
+</header>
+<nav>
+  <a onclick="go('home')" id="nav-home" class="active">Заказать доставку</a>
+  <a onclick="go('track')" id="nav-track">Отследить заказ</a>
+</nav>
+
+<!-- HOME -->
+<div id="home" class="page active">
+  <div class="hero">
+    <div>
+      <h2>Доставим всё, что нужно</h2>
+      <p>Курьер приедет за 45 минут.<br>Работаем 24/7 по всему городу.</p>
+      <button onclick="document.getElementById('order-form-card').scrollIntoView({behavior:'smooth'})">Оформить доставку →</button>
+    </div>
+    <div class="hero-emoji">🚚</div>
+  </div>
+  <div class="order-form" id="order-form-card">
+    <h2>📦 Новый заказ</h2>
+    <div class="row2">
+      <div class="field"><label>Откуда забрать</label><input type="text" id="from-addr" placeholder="ул. Пушкина, 10" value="ул. Пушкина, 10"></div>
+      <div class="field"><label>Куда доставить</label><input type="text" id="to-addr" placeholder="ул. Ленина, 5, кв. 23" value="ул. Ленина, 5, кв. 23"></div>
+    </div>
+    <div class="field"><label>Размер посылки</label>
+      <div class="size-grid">
+        <div class="size-opt active" onclick="selectSize(this,'Конверт','99')"><div class="sz-icon">✉️</div><div class="sz-name">Конверт</div><div class="sz-price">от 99 ₽</div></div>
+        <div class="size-opt" onclick="selectSize(this,'Коробка S','199')"><div class="sz-icon">📦</div><div class="sz-name">Коробка S</div><div class="sz-price">от 199 ₽</div></div>
+        <div class="size-opt" onclick="selectSize(this,'Коробка L','349')"><div class="sz-icon">🗃️</div><div class="sz-name">Коробка L</div><div class="sz-price">от 349 ₽</div></div>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Имя отправителя</label><input type="text" id="sender-name" placeholder="Иван" value="Иван Петров"></div>
+      <div class="field"><label>Телефон</label><input type="tel" placeholder="+7 900 000-00-00" value="+7 900 123-45-67"></div>
+    </div>
+    <div class="field"><label>Комментарий курьеру</label><input type="text" placeholder="Домофон 123, 3 этаж" value="Домофон 123, 3 этаж"></div>
+    <div class="price-row">
+      <span>Стоимость доставки</span>
+      <span class="price" id="calc-price">от 99 ₽</span>
+    </div>
+    <button class="submit-btn" onclick="placeDelivery()">Вызвать курьера 🚴</button>
+  </div>
+</div>
+
+<!-- TRACK -->
+<div id="track" class="page">
+  <div class="track-box">
+    <h2 style="margin-bottom:16px;color:#e85d04">🔍 Отслеживание</h2>
+    <div class="track-input-row">
+      <input type="text" id="track-num" placeholder="Номер заказа (напр. 48201)" value="">
+      <button onclick="showTracking()">Найти</button>
+    </div>
+    <div id="tracking-result" style="display:none">
+      <div class="courier-card">
+        <div class="courier-av">🧑‍💼</div>
+        <div>
+          <div class="courier-name">Дмитрий В. ⭐ 4.9</div>
+          <div class="courier-eta">Прибудет через ~18 минут</div>
+        </div>
+      </div>
+      <div style="margin-top:20px">
+        <div class="status-timeline">
+          <div class="step done"><div><div class="st-label">13:40</div><div class="st-val">Заказ принят</div></div></div>
+          <div class="step done"><div><div class="st-label">13:52</div><div class="st-val">Курьер забрал посылку</div></div></div>
+          <div class="step active-step"><div><div class="st-label">Сейчас</div><div class="st-val">В пути — 2.3 км до вас</div></div></div>
+          <div class="step"><div><div class="st-label">~14:25</div><div class="st-val">Ожидаемая доставка</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SUCCESS -->
+<div id="success" class="page">
+  <div class="success-box">
+    <div class="check">🚴</div>
+    <h2>Курьер уже едет!</h2>
+    <p>Заказ #<span id="order-id"></span> принят.<br>Ожидайте курьера через 35–45 минут.</p>
+    <button class="track-btn" onclick="goTrack()">Отследить заказ</button>
+  </div>
+</div>
+
+<script>
+let selectedSize = {name:'Конверт',price:'99'};
+function selectSize(el, name, price){
+  document.querySelectorAll('.size-opt').forEach(o=>o.classList.remove('active'));
+  el.classList.add('active');
+  selectedSize = {name, price};
+  document.getElementById('calc-price').textContent = 'от ' + price + ' ₽';
+}
+function placeDelivery(){
+  const f = document.getElementById('from-addr').value;
+  const t = document.getElementById('to-addr').value;
+  if(!f||!t){alert('Укажите адреса');return;}
+  const id = Math.floor(10000+Math.random()*89999);
+  document.getElementById('order-id').textContent = id;
+  document.getElementById('track-num').value = id;
+  go('success');
+}
+function goTrack(){ go('track'); showTracking(); }
+function showTracking(){ document.getElementById('tracking-result').style.display='block'; }
+function go(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(page).classList.add('active');
+  document.querySelectorAll('nav a').forEach(a=>a.classList.remove('active'));
+  const el=document.getElementById('nav-'+page);
+  if(el)el.classList.add('active');
+}
+</script>
+</body>
+</html>

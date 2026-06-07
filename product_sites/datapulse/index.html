@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DataPulse — Аналитика</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#07111f;color:#cbd5e1}
+header{background:#0f1f33;border-bottom:1px solid #1e3a5f;padding:0 28px;height:62px;display:flex;align-items:center;justify-content:space-between}
+.logo{font-size:21px;font-weight:800;color:#fff}
+.logo span{color:#38bdf8}
+.live-badge{background:#0c2a1a;border:1px solid #16a34a;color:#4ade80;padding:4px 12px;border-radius:12px;font-size:12px;display:flex;align-items:center;gap:6px}
+.pulse{width:8px;height:8px;border-radius:50%;background:#4ade80;animation:pulse 1.4s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+nav{background:#0b1929;border-bottom:1px solid #1e3a5f;display:flex;padding:0 28px}
+nav a{color:#64748b;padding:12px 18px;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;text-decoration:none}
+nav a:hover,nav a.active{color:#38bdf8;border-bottom-color:#38bdf8}
+.page{display:none;padding:24px;max-width:1100px;margin:0 auto}
+.page.active{display:block}
+/* KPIs */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.kpi{background:#0f1f33;border:1px solid #1e3a5f;border-radius:10px;padding:18px}
+.kpi .k-label{font-size:11px;color:#475569;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
+.kpi .k-val{font-size:26px;font-weight:700}
+.kpi .k-delta{font-size:12px;margin-top:4px}
+.kpi.up .k-val{color:#4ade80}
+.kpi.up .k-delta{color:#4ade80}
+.kpi.down .k-val{color:#f87171}
+.kpi.down .k-delta{color:#f87171}
+.kpi.blue .k-val{color:#38bdf8}
+.kpi.neutral .k-val{color:#cbd5e1}
+/* Charts area */
+.charts-row{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:20px}
+.chart-box{background:#0f1f33;border:1px solid #1e3a5f;border-radius:10px;padding:20px}
+.chart-box h3{font-size:14px;color:#94a3b8;margin-bottom:16px}
+canvas{display:block;width:100%!important}
+/* Table */
+.table-card{background:#0f1f33;border:1px solid #1e3a5f;border-radius:10px;padding:20px}
+.table-card h3{font-size:14px;color:#94a3b8;margin-bottom:14px}
+.data-table{width:100%;border-collapse:collapse;font-size:13px}
+.data-table th{background:#0b1929;color:#475569;padding:8px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+.data-table td{padding:10px 14px;border-top:1px solid #1e3a5f;color:#cbd5e1}
+.data-table tr:hover td{background:rgba(56,189,248,.04)}
+.pct-bar{background:#1e3a5f;border-radius:4px;height:6px;margin-top:4px;overflow:hidden}
+.pct-fill{background:#38bdf8;height:100%;border-radius:4px}
+.badge-up{color:#4ade80}.badge-dn{color:#f87171}
+/* Reports */
+.report-item{background:#0f1f33;border:1px solid #1e3a5f;border-radius:8px;padding:16px 20px;display:flex;align-items:center;gap:16px;margin-bottom:10px;cursor:pointer}
+.report-item:hover{border-color:#38bdf8}
+.rep-icon{font-size:26px;flex-shrink:0}
+.rep-title{font-size:14px;font-weight:600;margin-bottom:2px}
+.rep-meta{font-size:12px;color:#475569}
+.rep-dl{margin-left:auto;background:#0b1929;border:1px solid #1e3a5f;color:#38bdf8;padding:6px 14px;border-radius:6px;font-size:12px}
+/* Filters */
+.filter-bar{display:flex;gap:10px;margin-bottom:20px;align-items:center}
+.filter-bar select,.filter-bar input{background:#0f1f33;border:1px solid #1e3a5f;color:#cbd5e1;padding:7px 12px;border-radius:6px;font-size:13px;outline:none}
+.filter-bar select:focus,.filter-bar input:focus{border-color:#38bdf8}
+.apply-btn{background:#0369a1;color:#fff;border:none;padding:7px 18px;border-radius:6px;font-size:13px;cursor:pointer}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Data<span>Pulse</span></div>
+  <div class="live-badge"><span class="pulse"></span>Live данные</div>
+</header>
+<nav>
+  <a onclick="go('dashboard')" id="nav-dashboard" class="active">Дашборд</a>
+  <a onclick="go('sources')" id="nav-sources">Источники</a>
+  <a onclick="go('reports')" id="nav-reports">Отчёты</a>
+</nav>
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="page active">
+  <div class="filter-bar">
+    <select id="period-sel" onchange="updateCharts()">
+      <option value="7">7 дней</option>
+      <option value="30" selected>30 дней</option>
+      <option value="90">90 дней</option>
+    </select>
+    <select id="source-sel" onchange="updateCharts()">
+      <option>Все источники</option>
+      <option>FreshMart</option>
+      <option>FastPay</option>
+      <option>GoExpress</option>
+    </select>
+    <button class="apply-btn">Применить</button>
+  </div>
+  <div class="kpi-row">
+    <div class="kpi up"><div class="k-label">Пользователи</div><div class="k-val" id="kv1">24 810</div><div class="k-delta">↑ +8.4%</div></div>
+    <div class="kpi blue"><div class="k-label">Сессии</div><div class="k-val" id="kv2">143 K</div><div class="k-delta">за период</div></div>
+    <div class="kpi up"><div class="k-label">Конверсия</div><div class="k-val" id="kv3">4.7%</div><div class="k-delta">↑ +0.3pp</div></div>
+    <div class="kpi down"><div class="k-label">Отказы</div><div class="k-val" id="kv4">31.2%</div><div class="k-delta">↓ −2.1pp</div></div>
+  </div>
+  <div class="charts-row">
+    <div class="chart-box">
+      <h3>Активность пользователей</h3>
+      <canvas id="line-chart" height="120"></canvas>
+    </div>
+    <div class="chart-box">
+      <h3>Источники трафика</h3>
+      <canvas id="donut-chart" height="160"></canvas>
+      <div id="donut-legend" style="margin-top:12px;font-size:12px;color:#64748b"></div>
+    </div>
+  </div>
+  <div class="table-card">
+    <h3>Топ страниц</h3>
+    <table class="data-table">
+      <thead><tr><th>Страница</th><th>Просмотры</th><th>Доля</th><th>Изменение</th></tr></thead>
+      <tbody id="pages-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- SOURCES -->
+<div id="sources" class="page">
+  <div class="table-card">
+    <h3>Подключённые источники данных</h3>
+    <table class="data-table">
+      <thead><tr><th>Источник</th><th>Тип</th><th>Статус</th><th>Последняя синхронизация</th><th>Записей</th></tr></thead>
+      <tbody>
+        <tr><td>FreshMart</td><td>PostgreSQL</td><td style="color:#4ade80">● Активен</td><td>2 мин назад</td><td>482 130</td></tr>
+        <tr><td>FastPay</td><td>Kafka Stream</td><td style="color:#4ade80">● Активен</td><td>Реальное время</td><td>1.2 млн</td></tr>
+        <tr><td>GoExpress</td><td>REST API</td><td style="color:#4ade80">● Активен</td><td>5 мин назад</td><td>94 820</td></tr>
+        <tr><td>DevBridge</td><td>Webhook</td><td style="color:#fbbf24">● Предупреждение</td><td>18 мин назад</td><td>34 500</td></tr>
+        <tr><td>MyProfile</td><td>GraphQL</td><td style="color:#4ade80">● Активен</td><td>1 мин назад</td><td>24 810</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- REPORTS -->
+<div id="reports" class="page">
+  <div class="report-item" onclick="downloadReport('monthly')">
+    <div class="rep-icon">📊</div>
+    <div><div class="rep-title">Ежемесячный отчёт — Май 2026</div><div class="rep-meta">Создан 01.06.2026 · PDF, 2.4 MB</div></div>
+    <button class="rep-dl" onclick="event.stopPropagation();downloadReport('monthly')">⬇ Скачать</button>
+  </div>
+  <div class="report-item" onclick="downloadReport('conv')">
+    <div class="rep-icon">🎯</div>
+    <div><div class="rep-title">Анализ конверсии Q2 2026</div><div class="rep-meta">Создан 29.05.2026 · XLSX, 840 KB</div></div>
+    <button class="rep-dl" onclick="event.stopPropagation();downloadReport('conv')">⬇ Скачать</button>
+  </div>
+  <div class="report-item" onclick="downloadReport('users')">
+    <div class="rep-icon">👥</div>
+    <div><div class="rep-title">Когортный анализ пользователей</div><div class="rep-meta">Создан 20.05.2026 · PDF, 1.1 MB</div></div>
+    <button class="rep-dl" onclick="event.stopPropagation();downloadReport('users')">⬇ Скачать</button>
+  </div>
+  <div class="report-item">
+    <div class="rep-icon">⚙️</div>
+    <div><div class="rep-title">Создать новый отчёт</div><div class="rep-meta">Настроить параметры и период</div></div>
+    <button class="rep-dl" onclick="alert('Конструктор отчётов открыт')">+ Создать</button>
+  </div>
+</div>
+
+<script>
+const PAGES_DATA = [
+  {name:'/freshmart/catalog',views:48210,pct:34},
+  {name:'/fastpay/send',views:31840,pct:22},
+  {name:'/goexpress/order',views:22110,pct:16},
+  {name:'/myprofile/overview',views:14300,pct:10},
+  {name:'/devbridge/docs',views:9800,pct:7},
+];
+
+function go(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(page).classList.add('active');
+  document.querySelectorAll('nav a').forEach(a=>a.classList.remove('active'));
+  const el=document.getElementById('nav-'+page);if(el)el.classList.add('active');
+}
+
+function updateCharts(){
+  const p=parseInt(document.getElementById('period-sel').value);
+  // vary KPI
+  document.getElementById('kv1').textContent=(20000+p*160).toLocaleString('ru');
+  document.getElementById('kv2').textContent=Math.round((100+p*1.4))+'K';
+  drawLine(p);
+}
+
+function drawLine(days){
+  const c=document.getElementById('line-chart');
+  const ctx=c.getContext('2d');
+  c.width=c.parentElement.clientWidth-40;
+  ctx.clearRect(0,0,c.width,c.height);
+  const pts=[];
+  for(let i=0;i<days&&i<30;i++) pts.push(800+Math.round(Math.sin(i/3)*200+Math.random()*150));
+  const W=c.width,H=c.height,n=pts.length;
+  const max=Math.max(...pts),min=Math.min(...pts)-50;
+  const x=i=>(i/(n-1))*(W-20)+10;
+  const y=v=>H-8-((v-min)/(max-min))*(H-24);
+  // fill
+  const grad=ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,'rgba(56,189,248,.25)');
+  grad.addColorStop(1,'rgba(56,189,248,.0)');
+  ctx.beginPath();ctx.moveTo(x(0),y(pts[0]));
+  pts.forEach((_,i)=>{if(i)ctx.lineTo(x(i),y(pts[i]));});
+  ctx.lineTo(x(n-1),H);ctx.lineTo(x(0),H);ctx.closePath();
+  ctx.fillStyle=grad;ctx.fill();
+  // line
+  ctx.beginPath();ctx.moveTo(x(0),y(pts[0]));
+  pts.forEach((_,i)=>{if(i)ctx.lineTo(x(i),y(pts[i]));});
+  ctx.strokeStyle='#38bdf8';ctx.lineWidth=2;ctx.stroke();
+}
+
+function drawDonut(){
+  const c=document.getElementById('donut-chart');
+  const ctx=c.getContext('2d');
+  c.width=160;c.height=160;
+  const data=[{v:40,col:'#38bdf8',label:'Прямой'},{v:28,col:'#818cf8',label:'Поиск'},{v:20,col:'#4ade80',label:'Реклама'},{v:12,col:'#fb923c',label:'Соцсети'}];
+  let start=-.5*Math.PI;const cx=80,cy=80,r=60,ir=36;
+  data.forEach(d=>{
+    const a=(d.v/100)*2*Math.PI;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,start,start+a);ctx.closePath();
+    ctx.fillStyle=d.col;ctx.fill();
+    ctx.beginPath();ctx.arc(cx,cy,ir,0,2*Math.PI);ctx.fillStyle='#07111f';ctx.fill();
+    start+=a;
+  });
+  document.getElementById('donut-legend').innerHTML=data.map(d=>`<span style="color:${d.col}">■</span> ${d.label} ${d.v}%  `).join('');
+}
+
+function renderTable(){
+  document.getElementById('pages-tbody').innerHTML=PAGES_DATA.map(r=>`
+    <tr>
+      <td style="color:#38bdf8">${r.name}</td>
+      <td>${r.views.toLocaleString('ru')}</td>
+      <td><div>${r.pct}%</div><div class="pct-bar"><div class="pct-fill" style="width:${r.pct*2}%"></div></div></td>
+      <td class="${r.pct>15?'badge-up':'badge-dn'}">${r.pct>15?'↑':'↓'} ${Math.round(r.pct*.3+1)}%</td>
+    </tr>`).join('');
+}
+
+function downloadReport(type){
+  alert('Загрузка отчёта начата...');
+}
+
+drawLine(30);drawDonut();renderTable();
+</script>
+</body>
+</html>

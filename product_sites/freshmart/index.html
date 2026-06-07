@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FreshMart — Свежие продукты</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#f4faf4;color:#1a2e1a}
+header{background:#2d7a2d;color:#fff;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:60px}
+header h1{font-size:22px;letter-spacing:1px}
+.cart-btn{background:#fff;color:#2d7a2d;border:none;padding:8px 16px;border-radius:20px;font-weight:700;cursor:pointer;font-size:14px}
+nav{background:#3a9e3a;display:flex;gap:2px;padding:0 24px}
+nav a{color:#d4f7d4;padding:10px 16px;text-decoration:none;font-size:14px;cursor:pointer;display:block}
+nav a:hover,nav a.active{background:#2d7a2d;color:#fff;border-radius:4px 4px 0 0}
+.page{display:none;padding:24px;max-width:1100px;margin:0 auto}
+.page.active{display:block}
+.hero{background:linear-gradient(135deg,#2d7a2d,#5cbf5c);color:#fff;border-radius:12px;padding:40px;margin-bottom:28px;text-align:center}
+.hero h2{font-size:32px;margin-bottom:8px}
+.hero p{font-size:16px;opacity:.9;margin-bottom:20px}
+.hero button{background:#fff;color:#2d7a2d;border:none;padding:12px 28px;border-radius:25px;font-size:16px;font-weight:700;cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
+.card{background:#fff;border-radius:10px;padding:16px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.08);cursor:pointer;transition:transform .15s,box-shadow .15s}
+.card:hover{transform:translateY(-3px);box-shadow:0 6px 16px rgba(0,0,0,.14)}
+.card .emoji{font-size:48px;margin-bottom:8px}
+.card h3{font-size:15px;margin-bottom:4px}
+.card .price{color:#2d7a2d;font-weight:700;font-size:18px;margin-bottom:10px}
+.card .old{color:#999;text-decoration:line-through;font-size:13px}
+.add-btn{background:#2d7a2d;color:#fff;border:none;padding:7px 18px;border-radius:16px;cursor:pointer;font-size:13px;width:100%}
+.add-btn:hover{background:#1e5c1e}
+/* Product detail */
+.product-detail{background:#fff;border-radius:12px;padding:32px;display:flex;gap:32px;box-shadow:0 2px 12px rgba(0,0,0,.1)}
+.product-detail .big-emoji{font-size:100px;min-width:140px;text-align:center}
+.product-detail .info h2{font-size:26px;margin-bottom:8px}
+.product-detail .info .price{font-size:28px;color:#2d7a2d;font-weight:700;margin-bottom:16px}
+.product-detail .info p{color:#555;margin-bottom:20px;line-height:1.6}
+.qty-row{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.qty-btn{background:#e8f5e9;border:none;width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer;color:#2d7a2d;font-weight:700}
+#qty-val{font-size:18px;font-weight:700;min-width:24px;text-align:center}
+.big-add{background:#2d7a2d;color:#fff;border:none;padding:12px 32px;border-radius:25px;font-size:16px;font-weight:700;cursor:pointer}
+/* Cart */
+.cart-item{background:#fff;border-radius:8px;padding:14px 18px;display:flex;align-items:center;gap:16px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.cart-item .emo{font-size:32px}
+.cart-item .name{flex:1;font-weight:600}
+.cart-item .subtotal{color:#2d7a2d;font-weight:700;font-size:16px;min-width:80px;text-align:right}
+.remove-btn{background:none;border:1px solid #ddd;border-radius:50%;width:28px;height:28px;cursor:pointer;color:#999;font-size:16px}
+.cart-summary{background:#fff;border-radius:10px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.09);margin-top:16px}
+.total-row{display:flex;justify-content:space-between;font-size:18px;font-weight:700;margin-bottom:16px}
+.checkout-big{background:#2d7a2d;color:#fff;border:none;width:100%;padding:14px;border-radius:25px;font-size:16px;font-weight:700;cursor:pointer}
+/* Checkout */
+.form-card{background:#fff;border-radius:12px;padding:28px;box-shadow:0 2px 12px rgba(0,0,0,.1);max-width:560px;margin:0 auto}
+.form-card h2{margin-bottom:20px;color:#2d7a2d}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:13px;color:#666;margin-bottom:4px;font-weight:600}
+.field input,.field select,.field textarea{width:100%;border:1.5px solid #dde8dd;border-radius:8px;padding:10px 12px;font-size:14px;outline:none}
+.field input:focus,.field select:focus{border-color:#2d7a2d}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.submit-btn{background:#2d7a2d;color:#fff;border:none;width:100%;padding:14px;border-radius:25px;font-size:16px;font-weight:700;cursor:pointer;margin-top:8px}
+/* Success */
+.success-box{text-align:center;padding:60px 20px}
+.success-box .check{font-size:80px;margin-bottom:16px}
+.success-box h2{font-size:28px;color:#2d7a2d;margin-bottom:8px}
+.success-box p{color:#555;font-size:16px;margin-bottom:24px}
+.back-btn{background:#2d7a2d;color:#fff;border:none;padding:12px 28px;border-radius:25px;font-size:15px;cursor:pointer}
+.badge{background:#ff4444;color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:inline-flex;align-items:center;justify-content:center;margin-left:4px}
+</style>
+</head>
+<body>
+<header>
+  <h1>🌿 FreshMart</h1>
+  <button class="cart-btn" onclick="go('cart')">🛒 Корзина <span id="cart-count" class="badge">0</span></button>
+</header>
+<nav>
+  <a onclick="go('home')" id="nav-home" class="active">Каталог</a>
+  <a onclick="go('cart')" id="nav-cart">Корзина</a>
+  <a onclick="go('checkout')" id="nav-checkout">Оформление</a>
+</nav>
+
+<!-- HOME -->
+<div id="home" class="page active">
+  <div class="hero">
+    <h2>Свежие продукты с доставкой</h2>
+    <p>Фрукты, овощи и деликатесы — прямо к вашей двери за 2 часа</p>
+    <button onclick="go('home')">Смотреть каталог →</button>
+  </div>
+  <div class="grid" id="product-grid"></div>
+</div>
+
+<!-- PRODUCT DETAIL -->
+<div id="detail" class="page">
+  <p style="margin-bottom:16px"><a onclick="go('home')" style="color:#2d7a2d;cursor:pointer">← Назад в каталог</a></p>
+  <div class="product-detail">
+    <div class="big-emoji" id="d-emoji"></div>
+    <div class="info">
+      <h2 id="d-name"></h2>
+      <div class="price" id="d-price"></div>
+      <p id="d-desc"></p>
+      <div class="qty-row">
+        <button class="qty-btn" onclick="changeQty(-1)">−</button>
+        <span id="qty-val">1</span>
+        <button class="qty-btn" onclick="changeQty(1)">+</button>
+        <span style="color:#888;font-size:13px">кг / шт</span>
+      </div>
+      <button class="big-add" onclick="addToCartDetail()">Добавить в корзину</button>
+    </div>
+  </div>
+</div>
+
+<!-- CART -->
+<div id="cart" class="page">
+  <h2 style="margin-bottom:16px">Ваша корзина</h2>
+  <div id="cart-items"></div>
+  <div class="cart-summary">
+    <div class="total-row"><span>Итого:</span><span id="cart-total">0 ₽</span></div>
+    <button class="checkout-big" onclick="go('checkout')">Оформить заказ</button>
+  </div>
+</div>
+
+<!-- CHECKOUT -->
+<div id="checkout" class="page">
+  <div class="form-card">
+    <h2>📦 Оформление заказа</h2>
+    <div class="row2">
+      <div class="field"><label>Имя</label><input type="text" placeholder="Александр" id="f-name" value="Александр"></div>
+      <div class="field"><label>Телефон</label><input type="tel" placeholder="+7 900 000-00-00" id="f-phone" value="+7 900 123-45-67"></div>
+    </div>
+    <div class="field"><label>Адрес доставки</label><input type="text" placeholder="ул. Ленина, 12, кв. 34" id="f-addr" value="ул. Ленина, 12, кв. 34"></div>
+    <div class="row2">
+      <div class="field"><label>Дата доставки</label><input type="date" id="f-date"></div>
+      <div class="field"><label>Время</label>
+        <select><option>10:00–12:00</option><option>12:00–14:00</option><option>14:00–16:00</option><option>16:00–18:00</option></select>
+      </div>
+    </div>
+    <div class="field"><label>Способ оплаты</label>
+      <select><option>Картой онлайн</option><option>СБП</option><option>При получении</option></select>
+    </div>
+    <div class="field"><label>Комментарий</label><textarea rows="2" placeholder="Домофон 34, второй подъезд"></textarea></div>
+    <button class="submit-btn" onclick="placeOrder()">Подтвердить заказ</button>
+  </div>
+</div>
+
+<!-- SUCCESS -->
+<div id="success" class="page">
+  <div class="success-box">
+    <div class="check">✅</div>
+    <h2>Заказ #<span id="order-num"></span> оформлен!</h2>
+    <p>Доставим сегодня с 14:00 до 16:00.<br>Трек-номер отправлен на ваш телефон.</p>
+    <button class="back-btn" onclick="resetAndHome()">Продолжить покупки</button>
+  </div>
+</div>
+
+<script>
+const products = [
+  {id:1,name:'Яблоки Голден',emoji:'🍎',price:149,old:189,desc:'Сочные яблоки сорта Голден из Краснодарского края. Без ГМО.'},
+  {id:2,name:'Клубника',emoji:'🍓',price:320,old:null,desc:'Свежая клубника, собрана вчера. Упаковка 500г.'},
+  {id:3,name:'Бананы',emoji:'🍌',price:89,old:110,desc:'Спелые бананы из Эквадора, 1 кг.'},
+  {id:4,name:'Томаты черри',emoji:'🍅',price:210,old:null,desc:'Томаты черри, 400г. Идеально для салатов.'},
+  {id:5,name:'Авокадо',emoji:'🥑',price:180,old:220,desc:'Спелое авокадо, готово к употреблению.'},
+  {id:6,name:'Апельсины',emoji:'🍊',price:130,old:null,desc:'Сочные апельсины из Марокко, 1 кг.'},
+  {id:7,name:'Виноград',emoji:'🍇',price:290,old:350,desc:'Белый виноград без косточек, 800г.'},
+  {id:8,name:'Морковь',emoji:'🥕',price:59,old:null,desc:'Молодая морковь, 1 кг. Фермерская.'},
+];
+let cart = [];
+let currentProduct = null;
+let qty = 1;
+
+function renderGrid(){
+  document.getElementById('product-grid').innerHTML = products.map(p=>`
+    <div class="card" onclick="openProduct(${p.id})">
+      <div class="emoji">${p.emoji}</div>
+      <h3>${p.name}</h3>
+      ${p.old?`<div class="old">${p.old} ₽</div>`:''}
+      <div class="price">${p.price} ₽</div>
+      <button class="add-btn" onclick="event.stopPropagation();quickAdd(${p.id})">+ В корзину</button>
+    </div>`).join('');
+}
+
+function openProduct(id){
+  currentProduct = products.find(p=>p.id===id);
+  qty = 1;
+  document.getElementById('d-emoji').textContent = currentProduct.emoji;
+  document.getElementById('d-name').textContent = currentProduct.name;
+  document.getElementById('d-price').textContent = currentProduct.price + ' ₽';
+  document.getElementById('d-desc').textContent = currentProduct.desc;
+  document.getElementById('qty-val').textContent = qty;
+  go('detail');
+}
+
+function changeQty(d){ qty = Math.max(1, qty+d); document.getElementById('qty-val').textContent=qty; }
+
+function addToCartDetail(){ if(currentProduct) for(let i=0;i<qty;i++) addItem(currentProduct); go('cart'); }
+function quickAdd(id){ addItem(products.find(p=>p.id===id)); updateCartBadge(); }
+function addItem(p){
+  const ex = cart.find(c=>c.id===p.id);
+  if(ex) ex.qty++;
+  else cart.push({...p,qty:1});
+  updateCartBadge();
+}
+function updateCartBadge(){ document.getElementById('cart-count').textContent = cart.reduce((a,c)=>a+c.qty,0); }
+function renderCart(){
+  const el = document.getElementById('cart-items');
+  if(!cart.length){el.innerHTML='<p style="color:#888;text-align:center;padding:32px">Корзина пуста</p>';document.getElementById('cart-total').textContent='0 ₽';return;}
+  el.innerHTML = cart.map(c=>`
+    <div class="cart-item">
+      <span class="emo">${c.emoji}</span>
+      <span class="name">${c.name}</span>
+      <span style="color:#888">${c.qty} шт.</span>
+      <span class="subtotal">${c.price*c.qty} ₽</span>
+      <button class="remove-btn" onclick="removeItem(${c.id})">×</button>
+    </div>`).join('');
+  const total = cart.reduce((a,c)=>a+c.price*c.qty,0);
+  document.getElementById('cart-total').textContent = total + ' ₽';
+}
+function removeItem(id){ cart = cart.filter(c=>c.id!==id); updateCartBadge(); renderCart(); }
+
+function placeOrder(){
+  const n = document.getElementById('f-name').value;
+  if(!n){alert('Укажите имя');return;}
+  document.getElementById('order-num').textContent = Math.floor(10000+Math.random()*89999);
+  go('success');
+}
+function resetAndHome(){ cart=[]; updateCartBadge(); go('home'); }
+
+function go(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(page).classList.add('active');
+  document.querySelectorAll('nav a').forEach(a=>a.classList.remove('active'));
+  const navEl = document.getElementById('nav-'+page);
+  if(navEl) navEl.classList.add('active');
+  if(page==='cart') renderCart();
+  // set today date
+  const fd = document.getElementById('f-date');
+  if(fd && !fd.value){ const d=new Date();d.setDate(d.getDate()+1);fd.value=d.toISOString().split('T')[0]; }
+}
+
+renderGrid();
+</script>
+</body>
+</html>

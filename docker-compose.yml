@@ -1,0 +1,124 @@
+services:
+
+  # ─── Infrastructure ────────────────────────────────────────────────────────
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+
+  db:
+    image: postgres:16
+    ports:
+      - "5436:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: nerd_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./backend/scripts/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  kafka:
+    image: apache/kafka:3.7.0
+    hostname: kafka
+    extra_hosts:
+      - "kafka:127.0.0.1"
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+
+  # ─── Backend App ───────────────────────────────────────────────────────────
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:password@db:5432/nerd_db
+      ANALYTICS_DATABASE_URL: postgresql+asyncpg://postgres:password@db:5432/nerd_analytics_db
+      KAFKA_URL: kafka:9092
+      ML_SERVICE_URL: http://host.docker.internal:8091
+      APP_SERVICE_URL: http://backend:8001
+      SECRET_KEY: change-me-in-production
+      ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+      REFRESH_TOKEN_EXPIRE_DAYS: "7"
+      S3_ENDPOINT_URL: http://minio:9000
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      S3_BUCKET_NAME: nerd-files
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      db:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      minio:
+        condition: service_started
+    expose:
+      - "8001"
+
+  # ─── API Gateway ───────────────────────────────────────────────────────────
+
+  gateway:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: ["uvicorn", "backend.gateway.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      SKIP_MIGRATIONS: "true"
+      DATABASE_URL: postgresql+asyncpg://postgres:password@db:5432/nerd_db
+      APP_SERVICE_URL: http://backend:8001
+      SECRET_KEY: change-me-in-production
+    depends_on:
+      - backend
+    ports:
+      - "8000:8000"
+
+  # ─── Frontend ──────────────────────────────────────────────────────────────
+
+  frontend:
+    build:
+      context: ./frontend/nerd
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - gateway
+
+  # ML-агент запускается вне Docker (рядом с Ollama, для доступа к GPU)
+  # Запуск: см. ml/README.md или команду в Makefile
+
+volumes:
+  pgdata:
+  minio_data:

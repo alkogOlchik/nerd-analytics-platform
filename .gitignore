@@ -1,0 +1,38 @@
+# Secrets & local env
+.env
+.env.local
+*.env
+!.env.example
+!**/.env.example
+
+# Uploaded files (local dev without S3)
+backend/storage/uploads/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+env/
+
+# Tools
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+#IDE
+.idea/
+
+#media
+*.mp4
+*.wav
+
+# Notebooks: код в репо, данные — локально
+backend/notebooks/data/
+backend/notebooks/**/*.csv
+backend/notebooks/**/*.xlsx
+.ipynb_checkpoints/
+
+.claude/settings.local.json
