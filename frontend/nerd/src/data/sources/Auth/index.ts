@@ -20,6 +20,9 @@ export const authSource = {
     apiClient.post<AuthTokens>("/auth/refresh", { refresh_token: refreshToken }).then((r) => r.data),
 
   me: () => apiClient.get<UserDto>("/auth/me").then((r) => r.data),
+
+  updateProfile: (data: { full_name?: string; city?: string; age?: number; gender?: string }) =>
+    apiClient.patch<UserDto>("/auth/me", data).then((r) => r.data),
 }
 
 export type { AuthTokens, LoginRequest, RegisterRequest, UserDto }
