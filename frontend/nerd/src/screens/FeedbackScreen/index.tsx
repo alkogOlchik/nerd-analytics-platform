@@ -4,17 +4,7 @@ import { Sidebar, UserMenu } from "modules"
 import { useCreateReview } from "domain/Reviews/useCreateReview"
 import styles from "./FeedbackScreen.module.scss"
 
-const PRODUCTS = [
-  "веб-сервис",
-  "платёжный сервис",
-  "мобильное приложение",
-  "API интеграция",
-  "личный кабинет",
-  "аналитический модуль",
-]
-
 export const FeedbackScreen = () => {
-  const [product, setProduct] = useState("")
   const [rating, setRating] = useState(0)
   const [hover, setHover] = useState(0)
   const [comment, setComment] = useState("")
@@ -25,12 +15,11 @@ export const FeedbackScreen = () => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     if (!rating) return
-    await createReview({ product: product || undefined, rating, comment: comment || undefined })
+    await createReview({ rating, comment: comment || undefined })
     setSubmitted(true)
   }
 
   const reset = () => {
-    setProduct("")
     setRating(0)
     setHover(0)
     setComment("")
@@ -60,25 +49,6 @@ export const FeedbackScreen = () => {
             </div>
           ) : (
             <form className={styles.form} onSubmit={handleSubmit}>
-              <div className={styles.field}>
-                <label className={styles.label} htmlFor="product">
-                  Продукт
-                </label>
-                <select
-                  id="product"
-                  className={styles.select}
-                  value={product}
-                  onChange={(e) => setProduct(e.target.value)}
-                >
-                  <option value="">Не указан</option>
-                  {PRODUCTS.map((p) => (
-                    <option key={p} value={p}>
-                      {p}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
               <div className={styles.field}>
                 <span className={styles.label}>Оценка *</span>
                 <div className={styles.stars}>

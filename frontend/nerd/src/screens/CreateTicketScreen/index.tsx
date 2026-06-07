@@ -8,11 +8,13 @@ import styles from "./CreateTicketScreen.module.scss"
 
 const PRODUCTS = [
   "веб-сервис",
-  "платёжный сервис",
-  "мобильное приложение",
-  "API интеграция",
-  "личный кабинет",
+  "ии-ассистент",
   "аналитический модуль",
+  "личный кабинет",
+  "уведомления",
+  "страница обращений",
+  "страница отзывов",
+  "работа оператора",
 ] as const
 
 const PRIORITIES = [
@@ -32,7 +34,6 @@ export const CreateTicketScreen = () => {
   const [product, setProduct] = useState<string>("")
   const [description, setDescription] = useState("")
   const [priority, setPriority] = useState<"low" | "medium" | "high">("medium")
-  const [deadline, setDeadline] = useState(defaultDeadline())
   const [error, setError] = useState<string | null>(null)
   const [createdId, setCreatedId] = useState<string | null>(null)
 
@@ -49,7 +50,7 @@ export const CreateTicketScreen = () => {
       const ticket = await createTicket({
         product: product as (typeof PRODUCTS)[number],
         priority,
-        deadline: new Date(deadline).toISOString(),
+        deadline: new Date(defaultDeadline()).toISOString(),
         description,
       })
       setCreatedId(ticket.id)
@@ -83,7 +84,6 @@ export const CreateTicketScreen = () => {
                     setProduct("")
                     setDescription("")
                     setPriority("medium")
-                    setDeadline(defaultDeadline())
                     setCreatedId(null)
                   }}
                 >
@@ -91,7 +91,7 @@ export const CreateTicketScreen = () => {
                 </button>
                 <button
                   className={styles.newBtn}
-                  onClick={() => navigate(routes.ticketStatus)}
+                  onClick={() => navigate(routes.tickets)}
                 >
                   Мои обращения
                 </button>
@@ -147,38 +147,22 @@ export const CreateTicketScreen = () => {
               />
             </div>
 
-            <div className={styles.row}>
-              <div className={styles.field}>
-                <label className={styles.label} htmlFor="priority">
-                  Приоритет
-                </label>
-                <select
-                  id="priority"
-                  className={styles.select}
-                  value={priority}
-                  onChange={(e) => setPriority(e.target.value as typeof priority)}
-                >
-                  {PRIORITIES.map(({ value, label }) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className={styles.field}>
-                <label className={styles.label} htmlFor="deadline">
-                  Желаемый срок
-                </label>
-                <input
-                  id="deadline"
-                  className={styles.input}
-                  type="date"
-                  value={deadline}
-                  min={new Date().toISOString().slice(0, 10)}
-                  onChange={(e) => setDeadline(e.target.value)}
-                />
-              </div>
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="priority">
+                Приоритет
+              </label>
+              <select
+                id="priority"
+                className={styles.select}
+                value={priority}
+                onChange={(e) => setPriority(e.target.value as typeof priority)}
+              >
+                {PRIORITIES.map(({ value, label }) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {error && <div className={styles.error}>{error}</div>}
