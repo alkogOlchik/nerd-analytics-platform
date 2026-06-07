@@ -259,15 +259,28 @@ async def respond_node(state: AgentState) -> Dict[str, Any]:
 
     escalated = any(obs.get("tool_name") == "escalate_to_operator" for obs in observations)
 
+    import json as _json
+
     pending_review: Dict[str, Any] | None = None
     for obs in observations:
         if obs.get("tool_name") == "submit_review":
             content = (obs.get("output") or {}).get("content", "")
-            import json as _json
             try:
                 data = _json.loads(content)
                 if data.get("review_captured"):
                     pending_review = data
+            except (ValueError, TypeError):
+                pass
+            break
+
+    video_path: str | None = None
+    for obs in observations:
+        if obs.get("tool_name") == "record_web_guide":
+            content = (obs.get("output") or {}).get("content", "")
+            try:
+                data = _json.loads(content)
+                if data.get("video_path"):
+                    video_path = str(data["video_path"])
             except (ValueError, TypeError):
                 pass
             break
@@ -279,6 +292,9 @@ async def respond_node(state: AgentState) -> Dict[str, Any]:
     if pending_review:
         result["pending_review"] = pending_review
         logger.info("[iter=%d] respond | pending_review rating=%s product=%s", iterations, pending_review.get("rating"), pending_review.get("product"))
+    if video_path:
+        result["video_path"] = video_path
+        logger.info("[iter=%d] respond | video_path=%s", iterations, video_path)
     return result
 
 

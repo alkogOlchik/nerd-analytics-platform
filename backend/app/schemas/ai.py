@@ -194,6 +194,7 @@ class ChatResponse(BaseModel):
     assistant_message: ChatMessageResponse
     ml_response: dict
     escalation: EscalationOffer | None = None
+    video_url: str | None = None
 
 
 class ChatSessionResponse(BaseModel):

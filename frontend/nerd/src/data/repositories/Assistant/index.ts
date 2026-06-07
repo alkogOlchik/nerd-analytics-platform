@@ -62,7 +62,10 @@ export const assistantRepository = {
     const res = await assistantSource.sendMessage({ chat_id: sessionId, content, file_ids })
     return {
       userMessage: mapMessage(res.user_message),
-      assistantMessage: mapMessage(res.assistant_message),
+      assistantMessage: {
+        ...mapMessage(res.assistant_message),
+        ...(res.video_url ? { videoUrl: res.video_url } : {}),
+      },
       solutionOffered: res.solution_offered,
       ticketId: res.ticket_id,
       ticketStatus: res.ticket_status,
@@ -78,9 +81,16 @@ export const assistantRepository = {
       file_ids = uploaded.map((f) => f.id)
     }
     const res = await assistantSource.createSession({ first_message: firstMessage, file_ids })
+    const mappedMessages = res.messages.map(mapMessage)
+    if (res.video_url && mappedMessages.length >= 2) {
+      mappedMessages[mappedMessages.length - 1] = {
+        ...mappedMessages[mappedMessages.length - 1],
+        videoUrl: res.video_url,
+      }
+    }
     return {
       session: mapSession(res.session),
-      messages: res.messages.map(mapMessage),
+      messages: mappedMessages,
       solutionOffered: res.solution_offered,
       ticketId: res.ticket_id,
       ticketStatus: res.ticket_status,

@@ -50,6 +50,7 @@ export const assistantSource = {
       ticket_title: data.ticket_title,
       solution_offered: data.solution_offered ?? true,
       escalation: data.escalation ?? null,
+      video_url: data.video_url ?? null,
     }
   },
 
@@ -78,6 +79,7 @@ export const assistantSource = {
       ticket_title: data.ticket_title,
       solution_offered: data.solution_offered ?? true,
       escalation: data.escalation ?? null,
+      video_url: data.video_url ?? null,
     }
   },
 

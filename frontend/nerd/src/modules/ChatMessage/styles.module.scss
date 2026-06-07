@@ -56,6 +56,36 @@
   word-break: break-word;
 }
 
+.videoBlock {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.videoPlayer {
+  width: 100%;
+  max-width: 480px;
+  border-radius: 10px;
+  background: #000;
+  outline: none;
+}
+
+.videoDownload {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: var(--color-purple-accent, #7c5cff);
+  text-decoration: none;
+  opacity: 0.85;
+
+  &:hover {
+    opacity: 1;
+    text-decoration: underline;
+  }
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;

@@ -1,4 +1,4 @@
-import { Bot, User2 } from "lucide-react"
+import { Bot, User2, Download } from "lucide-react"
 import clsx from "clsx"
 import styles from "./styles.module.scss"
 import type { ChatMessageProps } from "./types"
@@ -16,6 +16,26 @@ export const ChatMessage = ({ message }: ChatMessageProps) => {
 
       <div className={clsx(styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAssistant)}>
         <p className={styles.content}>{message.content}</p>
+        {message.videoUrl && (
+          <div className={styles.videoBlock}>
+            <video
+              className={styles.videoPlayer}
+              src={message.videoUrl}
+              controls
+              preload="metadata"
+            />
+            <a
+              className={styles.videoDownload}
+              href={message.videoUrl}
+              download
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Download size={14} />
+              Скачать видео-гайд
+            </a>
+          </div>
+        )}
       </div>
 
       {isUser && (

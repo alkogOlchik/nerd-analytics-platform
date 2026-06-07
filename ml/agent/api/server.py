@@ -29,12 +29,20 @@ from agent.tools.rag_tool import (
 )
 from agent.tools.web_guide_tool import (
     DEFAULT_TIMEOUT_SECONDS,
+    RECORDER_DIR,
     record_web_guide as record_web_guide_tool,
 )
 
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Project LLM Agent API")
+
+VIDEOS_DIR = RECORDER_DIR / "output" / "videos"
+
+# ML service base URL — used to build video_url returned to clients.
+# Override via ML_SERVICE_BASE_URL env var if not running on localhost:8091.
+import os as _os
+_ML_BASE_URL = _os.environ.get("ML_SERVICE_BASE_URL", "http://localhost:8091")
 
 _JOBS: Dict[str, Dict[str, Any]] = {}
 _JOBS_LOCK = asyncio.Lock()
@@ -108,6 +116,10 @@ async def _run_query(query: str, model: LlmModel) -> Dict[str, Any]:
         response["escalate_to_operator"] = True
     if result.get("pending_review"):
         response["pending_review"] = result["pending_review"]
+    if result.get("video_path"):
+        video_filename = Path(str(result["video_path"])).name
+        response["video_url"] = f"{_ML_BASE_URL}/videos/{video_filename}"
+        logger.info("query | video_url=%s", response["video_url"])
     return response
 
 
@@ -193,6 +205,23 @@ def _job_result_path(job: Dict[str, Any], key: str) -> Path:
 @app.get("/health")
 async def health() -> Dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/videos/{filename}")
+async def serve_video(filename: str) -> FileResponse:
+    """Serve a recorded guide video by filename."""
+    # Prevent path traversal: only allow the bare filename, no slashes.
+    if "/" in filename or "\\" in filename or ".." in filename:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    path = VIDEOS_DIR / filename
+    if not path.exists() or not path.is_file():
+        raise HTTPException(status_code=404, detail=f"Video not found: {filename}")
+    return FileResponse(
+        str(path),
+        media_type="video/mp4",
+        filename=filename,
+        headers={"Accept-Ranges": "bytes"},
+    )
 
 
 @app.post("/query")

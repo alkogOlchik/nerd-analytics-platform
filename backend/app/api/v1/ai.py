@@ -93,6 +93,7 @@ async def chat(
     chat_id, ticket_id, ticket_status, ticket_title, user_msg, assistant_msg, ml_response, escalation = (
         await ai_service.chat(db, current_user.id, data)
     )
+    video_url = ml_response.get("video_url") if isinstance(ml_response, dict) else None
     return ChatResponse(
         chat_id=chat_id,
         ticket_id=ticket_id,
@@ -103,6 +104,7 @@ async def chat(
         assistant_message=ChatMessageResponse.model_validate(assistant_msg),
         ml_response=ml_response,
         escalation=escalation,
+        video_url=video_url,
     )
 
 
