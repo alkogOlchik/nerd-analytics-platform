@@ -31,3 +31,4 @@ class AgentState(TypedDict, total=False):
     llm_model_override: Optional[str]
     final_answer: Optional[str]
     escalate_to_operator: Optional[bool]
+    pending_review: Optional[Dict[str, Any]]

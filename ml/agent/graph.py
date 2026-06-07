@@ -57,6 +57,7 @@ SYSTEM_PROMPT = """Ты — ИИ-помощник платформы «Нёрд-
 - `run_analytics(task_description)` — генерирует и запускает Python/numpy код для численного анализа. Используй для расчётов метрик, агрегаций, поиска аномалий.
 - `record_web_guide(start_url, goal, headless, max_steps, model)` — запускает реальный браузер, выполняет навигацию на сайте и записывает пошаговое руководство с видео. Используй когда пользователь просит показать «как найти», «как добраться», «как сделать» на конкретном сайте.
 - `escalate_to_operator(reason)` — передать обращение оператору-человеку. Используй когда: вопрос выходит за рамки базы знаний, ты не уверен в корректности ответа, проблема требует ручного вмешательства (баг на стороне сервиса), пользователь явно просит человека, или после двух попыток ты всё ещё не можешь помочь. После вызова сообщи пользователю, что передаёшь его оператору.
+- `submit_review(rating, comment, product)` — сохранить отзыв пользователя. Используй когда пользователь хочет оставить отзыв или оценку. Собери все три параметра (оценка 1–5 звёзд, текст отзыва, название продукта/ресурса) — задавай вопросы по одному, если что-то не указано. После вызова подтверди пользователю что отзыв сохранён.
 
 ## Общие правила
 
@@ -233,14 +234,30 @@ async def respond_node(state: AgentState) -> Dict[str, Any]:
             break
     logger.info("[iter=%d] respond | final_answer=%s", iterations, _shorten(answer, 800))
 
-    escalated = any(
-        obs.get("tool_name") == "escalate_to_operator"
-        for obs in (state.get("observations") or [])
-    )
+    observations = state.get("observations") or []
+
+    escalated = any(obs.get("tool_name") == "escalate_to_operator" for obs in observations)
+
+    pending_review: Dict[str, Any] | None = None
+    for obs in observations:
+        if obs.get("tool_name") == "submit_review":
+            content = (obs.get("output") or {}).get("content", "")
+            import json as _json
+            try:
+                data = _json.loads(content)
+                if data.get("review_captured"):
+                    pending_review = data
+            except (ValueError, TypeError):
+                pass
+            break
+
     result: Dict[str, Any] = {"final_answer": answer or "(empty)"}
     if escalated:
         result["escalate_to_operator"] = True
         logger.info("[iter=%d] respond | escalated=True", iterations)
+    if pending_review:
+        result["pending_review"] = pending_review
+        logger.info("[iter=%d] respond | pending_review rating=%s product=%s", iterations, pending_review.get("rating"), pending_review.get("product"))
     return result
 
 

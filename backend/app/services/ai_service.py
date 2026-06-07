@@ -320,6 +320,17 @@ async def chat(
     ):
         ticket.status = "waiting_for_operator"
 
+    pending_review = ml_result.raw.get("pending_review") if ml_result.raw else None
+    if pending_review and isinstance(pending_review, dict) and pending_review.get("review_captured"):
+        review = Review(
+            client_id=client_id,
+            ticket_id=effective_ticket_id,
+            product=pending_review.get("product") or product,
+            rating=int(pending_review["rating"]),
+            comment=pending_review.get("comment") or "",
+        )
+        db.add(review)
+
     assistant_msg = ChatHistory(
         chat_id=chat_id,
         client_id=client_id,

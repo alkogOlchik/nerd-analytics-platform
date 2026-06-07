@@ -106,6 +106,8 @@ async def _run_query(query: str, model: LlmModel) -> Dict[str, Any]:
     }
     if result.get("escalate_to_operator"):
         response["escalate_to_operator"] = True
+    if result.get("pending_review"):
+        response["pending_review"] = result["pending_review"]
     return response
 
 
