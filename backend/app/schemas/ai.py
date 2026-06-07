@@ -186,6 +186,10 @@ class ChatEscalateRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     chat_id: uuid.UUID
+    ticket_id: uuid.UUID | None = None
+    ticket_status: str | None = None
+    ticket_title: str | None = None
+    solution_offered: bool = True
     user_message: ChatMessageResponse
     assistant_message: ChatMessageResponse
     ml_response: dict
@@ -195,7 +199,8 @@ class ChatResponse(BaseModel):
 class ChatSessionResponse(BaseModel):
     id: uuid.UUID
     title: str
+    ticket_id: uuid.UUID | None = None
+    ticket_status: str | None = None
     created_at: datetime
     updated_at: datetime
     last_message: str | None = None
-    ticket_id: uuid.UUID | None = None

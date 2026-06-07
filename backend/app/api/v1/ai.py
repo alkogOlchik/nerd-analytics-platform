@@ -14,6 +14,7 @@ from backend.app.schemas.ai import (
     ChatMessageResponse,
     ChatRequest,
     ChatResponse,
+    ChatSessionResponse,
     ClassifyReviewRequest,
     ClassifyTicketRequest,
     EscalationOffer,
@@ -75,22 +76,54 @@ async def classify_review(
 
 
 
+@router.get("/chat/sessions", response_model=list[ChatSessionResponse])
+async def get_chat_sessions(
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    return await ai_service.get_chat_sessions(db, current_user.id)
+
+
 @router.post("/chat", response_model=ChatResponse)
 async def chat(
     data: ChatRequest,
     db: AsyncSession = Depends(get_db),
     current_user: CurrentUser = Depends(get_current_user),
 ):
-    chat_id, user_msg, assistant_msg, ml_response, escalation = await ai_service.chat(
-        db, current_user.id, data
+    chat_id, ticket_id, ticket_status, ticket_title, user_msg, assistant_msg, ml_response, escalation = (
+        await ai_service.chat(db, current_user.id, data)
     )
     return ChatResponse(
         chat_id=chat_id,
+        ticket_id=ticket_id,
+        ticket_status=ticket_status,
+        ticket_title=ticket_title,
+        solution_offered=True,
         user_message=ChatMessageResponse.model_validate(user_msg),
         assistant_message=ChatMessageResponse.model_validate(assistant_msg),
         ml_response=ml_response,
         escalation=escalation,
     )
+
+
+@router.post("/chat/{chat_id}/resolve")
+async def resolve_chat(
+    chat_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    ticket_id, ticket_status = await ai_service.resolve_chat(db, current_user.id, chat_id)
+    return {"ticket_id": ticket_id, "status": ticket_status}
+
+
+@router.post("/chat/{chat_id}/operator")
+async def request_operator(
+    chat_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    ticket_id, ticket_status = await ai_service.request_operator_chat(db, current_user.id, chat_id)
+    return {"ticket_id": ticket_id, "status": ticket_status}
 
 
 @router.get("/escalation/options", response_model=EscalationOffer)

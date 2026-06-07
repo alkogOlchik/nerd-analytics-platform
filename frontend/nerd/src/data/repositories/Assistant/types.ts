@@ -1,10 +1,11 @@
 export interface ChatSession {
   id: string
   title: string
+  ticketId: string | null
+  ticketStatus: string | null
   createdAt: string
   updatedAt: string
   lastMessage?: string
-  ticketId?: string | null
 }
 
 export interface Message {
@@ -30,12 +31,20 @@ export interface EscalationInfo {
 export interface SendMessageResult {
   userMessage: Message
   assistantMessage: Message
+  solutionOffered: boolean
+  ticketId: string | null
+  ticketStatus: string | null
+  ticketTitle: string | null
   escalation: EscalationInfo | null
 }
 
 export interface CreateSessionResult {
   session: ChatSession
   messages: Message[]
+  solutionOffered: boolean
+  ticketId: string | null
+  ticketStatus: string | null
+  ticketTitle: string | null
   escalation: EscalationInfo | null
 }
 

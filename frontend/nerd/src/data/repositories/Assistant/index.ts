@@ -27,6 +27,8 @@ const mapEscalation = (dto: EscalationOffer | null | undefined): EscalationInfo 
 const mapSession = (dto: ChatSessionDto): ChatSession => ({
   id: dto.id,
   title: dto.title,
+  ticketId: dto.ticket_id ?? null,
+  ticketStatus: dto.ticket_status ?? null,
   createdAt: dto.created_at,
   updatedAt: dto.updated_at,
   lastMessage: dto.last_message,
@@ -61,6 +63,10 @@ export const assistantRepository = {
     return {
       userMessage: mapMessage(res.user_message),
       assistantMessage: mapMessage(res.assistant_message),
+      solutionOffered: res.solution_offered,
+      ticketId: res.ticket_id,
+      ticketStatus: res.ticket_status,
+      ticketTitle: res.ticket_title,
       escalation: mapEscalation(res.escalation),
     }
   },
@@ -75,6 +81,10 @@ export const assistantRepository = {
     return {
       session: mapSession(res.session),
       messages: res.messages.map(mapMessage),
+      solutionOffered: res.solution_offered,
+      ticketId: res.ticket_id,
+      ticketStatus: res.ticket_status,
+      ticketTitle: res.ticket_title,
       escalation: mapEscalation(res.escalation),
     }
   },
@@ -94,6 +104,22 @@ export const assistantRepository = {
       finalCategory: res.final_category,
     }
   },
+
+  resolveChat: async (chatId: string): Promise<{ ticket_id: string; status: string }> => {
+    return assistantSource.resolveChat(chatId)
+  },
+
+  escalateToOperator: async (chatId: string): Promise<{ ticket_id: string; status: string }> => {
+    return assistantSource.escalateToOperator(chatId)
+  },
 }
 
-export type { ChatSession, Message, SendMessageResult, CreateSessionResult, EscalationInfo, EscalateChatInput, EscalateChatResult }
+export type {
+  ChatSession,
+  Message,
+  SendMessageResult,
+  CreateSessionResult,
+  EscalationInfo,
+  EscalateChatInput,
+  EscalateChatResult,
+}

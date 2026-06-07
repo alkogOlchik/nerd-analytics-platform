@@ -1,6 +1,8 @@
 export interface ChatSessionDto {
   id: string
   title: string
+  ticket_id: string | null
+  ticket_status: string | null
   created_at: string
   updated_at: string
   last_message?: string
@@ -17,6 +19,18 @@ export interface MessageDto {
   product?: string | null
   category?: string | null
   resolved_by_ai?: boolean
+}
+
+export interface ApiChatResponse {
+  chat_id: string
+  ticket_id: string | null
+  ticket_status: string | null
+  ticket_title: string | null
+  solution_offered: boolean
+  user_message: MessageDto
+  assistant_message: MessageDto
+  ml_response: Record<string, unknown>
+  escalation: EscalationOffer | null
 }
 
 export interface SendMessageRequest {
@@ -67,11 +81,19 @@ export interface EscalateChatResponse {
 export interface SendMessageResponse {
   user_message: MessageDto
   assistant_message: MessageDto
+  ticket_id: string | null
+  ticket_status: string | null
+  ticket_title: string | null
+  solution_offered: boolean
   escalation: EscalationOffer | null
 }
 
 export interface CreateSessionResponse {
   session: ChatSessionDto
   messages: MessageDto[]
+  ticket_id: string | null
+  ticket_status: string | null
+  ticket_title: string | null
+  solution_offered: boolean
   escalation: EscalationOffer | null
 }

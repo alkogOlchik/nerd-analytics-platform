@@ -5,6 +5,20 @@ import type { ChatHistoryProps } from "./types"
 import { useChatHistory } from "./useLogic/useChatHistory"
 import { HISTORY_TITLE, NEW_CHAT_LABEL } from "./constants"
 
+const STATUS_LABEL: Record<string, string> = {
+  in_progress: "в работе",
+  waiting_for_operator: "ожидание",
+  in_operator_processing: "у оператора",
+  closed: "закрыт",
+}
+
+const STATUS_CLASS: Record<string, string> = {
+  in_progress: styles.statusInProgress,
+  waiting_for_operator: styles.statusWaiting,
+  in_operator_processing: styles.statusOperator,
+  closed: styles.statusClosed,
+}
+
 export const ChatHistory = ({
   sessions,
   activeSessionId,
@@ -41,24 +55,34 @@ export const ChatHistory = ({
         )}
 
         {!isLoading &&
-          sessions.map((session) => (
-            <button
-              key={session.id}
-              className={clsx(
-                styles.item,
-                session.id === activeSessionId && styles.itemActive
-              )}
-              onClick={() => handleSelect(session.id)}
-            >
-              <MessageSquare size={16} className={styles.itemIcon} />
-              <div className={styles.itemContent}>
-                <span className={styles.itemTitle}>{session.title}</span>
-                {session.lastMessage && (
-                  <span className={styles.itemPreview}>{session.lastMessage}</span>
+          sessions.map((session) => {
+            const statusLabel = session.ticketStatus ? STATUS_LABEL[session.ticketStatus] : undefined
+            const statusClass = session.ticketStatus ? STATUS_CLASS[session.ticketStatus] : undefined
+
+            return (
+              <button
+                key={session.id}
+                className={clsx(
+                  styles.item,
+                  session.id === activeSessionId && styles.itemActive,
                 )}
-              </div>
-            </button>
-          ))}
+                onClick={() => handleSelect(session.id)}
+              >
+                <MessageSquare size={16} className={styles.itemIcon} />
+                <div className={styles.itemContent}>
+                  <div className={styles.itemTitleRow}>
+                    <span className={styles.itemTitle}>{session.title}</span>
+                    {statusLabel && statusClass && (
+                      <span className={clsx(styles.itemStatus, statusClass)}>{statusLabel}</span>
+                    )}
+                  </div>
+                  {session.lastMessage && (
+                    <span className={styles.itemPreview}>{session.lastMessage}</span>
+                  )}
+                </div>
+              </button>
+            )
+          })}
       </div>
     </aside>
   )

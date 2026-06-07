@@ -55,6 +55,8 @@ class TicketStatus(str, enum.Enum):
     fixed = "исправлено"
     closed = "закрыто"
     rejected = "отклонено"
+    waiting_for_operator = "waiting_for_operator"
+    in_operator_processing = "in_operator_processing"
 
 
 class EmployeeRole(str, enum.Enum):

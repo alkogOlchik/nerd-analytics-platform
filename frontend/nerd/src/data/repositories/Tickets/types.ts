@@ -1,4 +1,10 @@
-export type TicketStatus = "open" | "in_progress" | "closed" | "reopened"
+export type TicketStatus =
+  | "open"
+  | "in_progress"
+  | "closed"
+  | "reopened"
+  | "waiting_for_operator"
+  | "in_operator_processing"
 export type TicketPriority = "low" | "medium" | "high"
 export type TicketProduct =
   | "веб-сервис"
@@ -12,7 +18,8 @@ export interface Ticket {
   id: string
   clientId: string
   responsibleId: string | null
-  product: TicketProduct
+  title: string | null
+  product: TicketProduct | null
   status: TicketStatus
   priority: TicketPriority
   date: string

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react"
 import { useLocation } from "react-router-dom"
-import { Bot, User2 } from "lucide-react"
+import { Bot, User2, CheckCircle, Clock } from "lucide-react"
 import styles from "./AssistantScreen.module.scss"
 import { Sidebar, UserMenu } from "modules"
 import { ChatHistory } from "modules/ChatHistory"
@@ -10,140 +10,17 @@ import { useChatSessions } from "domain/Assistant/useChatSessions"
 import { useMessages } from "domain/Assistant/useMessages"
 import { useSendMessage } from "domain/Assistant/useSendMessage"
 import { useCreateSession } from "domain/Assistant/useCreateSession"
-import { useEscalateChat } from "domain/Assistant/useEscalateChat"
-import type { CreateSessionResult, EscalationInfo } from "data/repositories/Assistant"
-
-const PRODUCTS = [
-  "веб-сервис",
-  "платёжный сервис",
-  "мобильное приложение",
-  "API интеграция",
-  "личный кабинет",
-  "аналитический модуль",
-]
-
-const PRIORITY_LABELS: Record<string, string> = {
-  low: "Низкий",
-  medium: "Средний",
-  high: "Высокий",
-}
-
-const EscalationBanner = ({
-  chatId,
-  info,
-  onDismiss,
-  onSuccess,
-}: {
-  chatId: string
-  info: EscalationInfo
-  onDismiss: () => void
-  onSuccess: (ticketId: string) => void
-}) => {
-  const [product, setProduct] = useState(info.suggestedProduct ?? "")
-  const [priority, setPriority] = useState(info.priorities[0] ?? "medium")
-  const [category, setCategory] = useState(info.suggestedCategory ?? "")
-  const [description, setDescription] = useState("")
-
-  const { mutateAsync: escalate, isPending } = useEscalateChat()
-
-  const handleSubmit = async () => {
-    if (!product) return
-    const res = await escalate({
-      chatId,
-      product,
-      userPriority: priority,
-      category: category || undefined,
-      description: description || undefined,
-    })
-    onSuccess(res.ticketId)
-  }
-
-  const priorityOptions = info.priorities.length > 0 ? info.priorities : ["low", "medium", "high"]
-
-  return (
-    <div className={styles.escalationBanner}>
-      <p className={styles.escalationTitle}>Передать специалисту</p>
-
-      <div className={styles.escalationFields}>
-        <div className={styles.escalationField}>
-          <span className={styles.escalationLabel}>Продукт</span>
-          <select
-            className={styles.escalationSelect}
-            value={product}
-            onChange={(e) => setProduct(e.target.value)}
-          >
-            <option value="">Выберите...</option>
-            {(info.products.length > 0 ? info.products : PRODUCTS).map((p) => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className={styles.escalationField}>
-          <span className={styles.escalationLabel}>Приоритет</span>
-          <select
-            className={styles.escalationSelect}
-            value={priority}
-            onChange={(e) => setPriority(e.target.value)}
-          >
-            {priorityOptions.map((p) => (
-              <option key={p} value={p}>
-                {info.priorityLabels[p] ?? PRIORITY_LABELS[p] ?? p}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {info.categories.length > 0 && (
-          <div className={styles.escalationField}>
-            <span className={styles.escalationLabel}>Категория</span>
-            <select
-              className={styles.escalationSelect}
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            >
-              <option value="">Из контекста</option>
-              {info.categories.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        <div className={styles.escalationField} style={{ gridColumn: "1 / -1" }}>
-          <span className={styles.escalationLabel}>Описание (необязательно)</span>
-          <input
-            className={styles.escalationInput}
-            type="text"
-            placeholder="Дополнительные детали..."
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-        </div>
-      </div>
-
-      <div className={styles.escalationActions}>
-        <button className={styles.escalationCancel} onClick={onDismiss}>
-          Отмена
-        </button>
-        <button
-          className={styles.escalationSubmit}
-          disabled={isPending || !product}
-          onClick={handleSubmit}
-        >
-          {isPending ? "Создаём..." : "Создать обращение"}
-        </button>
-      </div>
-    </div>
-  )
-}
+import { useResolveChat } from "domain/Assistant/useResolveChat"
+import type { CreateSessionResult } from "data/repositories/Assistant"
 
 export const AssistantScreen = () => {
   const [activeSessionId, setActiveSessionId] = useState<string | null | undefined>(undefined)
   const [inputValue, setInputValue] = useState("")
   const [pendingFirstMessage, setPendingFirstMessage] = useState<string | null>(null)
-  const [escalation, setEscalation] = useState<EscalationInfo | null>(null)
-  const [escalationTicketId, setEscalationTicketId] = useState<string | null>(null)
+  const [ticketId, setTicketId] = useState<string | null>(null)
+  const [ticketStatus, setTicketStatus] = useState<string | null>(null)
+  const [ticketTitle, setTicketTitle] = useState<string | null>(null)
+  const [solutionOffered, setSolutionOffered] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const location = useLocation()
   const autoSentRef = useRef(false)
@@ -155,15 +32,47 @@ export const AssistantScreen = () => {
 
   const { data: messages = [], isLoading: messagesLoading } = useMessages(effectiveSessionId)
   const sendMessage = useSendMessage(effectiveSessionId)
+  const { mutate: resolveChat, isPending: isResolving } = useResolveChat()
+
+  // Sync ticket state from sessions when switching sessions
+  useEffect(() => {
+    if (!effectiveSessionId) {
+      setTicketId(null)
+      setTicketStatus(null)
+      setTicketTitle(null)
+      setSolutionOffered(false)
+      return
+    }
+    const session = sessions.find((s) => s.id === effectiveSessionId)
+    if (session) {
+      setTicketId(session.ticketId)
+      setTicketStatus(session.ticketStatus)
+    }
+  }, [effectiveSessionId, sessions])
+
+  // Update ticket state after sending a message
+  useEffect(() => {
+    if (sendMessage.data) {
+      const d = sendMessage.data
+      if (d.ticketId !== undefined) setTicketId(d.ticketId)
+      if (d.ticketStatus !== undefined) setTicketStatus(d.ticketStatus)
+      if (d.ticketTitle !== undefined) setTicketTitle(d.ticketTitle)
+      setSolutionOffered(d.solutionOffered)
+    }
+  }, [sendMessage.data])
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages, pendingFirstMessage])
 
   const handleSessionCreated = (result: CreateSessionResult) => {
     setActiveSessionId(result.session.id)
     setInputValue("")
     setPendingFirstMessage(null)
-    if (result.escalation?.required) {
-      setEscalation(result.escalation)
-      setEscalationTicketId(null)
-    }
+    setTicketId(result.ticketId)
+    setTicketStatus(result.ticketStatus)
+    setTicketTitle(result.ticketTitle)
+    setSolutionOffered(result.solutionOffered)
   }
 
   const createSession = useCreateSession(handleSessionCreated)
@@ -179,22 +88,9 @@ export const AssistantScreen = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  useEffect(() => {
-    if (sendMessage.data?.escalation?.required) {
-      setEscalation(sendMessage.data.escalation)
-      setEscalationTicketId(null)
-    }
-  }, [sendMessage.data])
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages, pendingFirstMessage])
-
   const handleSend = (files: File[]) => {
     const text = inputValue.trim()
     if (!text && files.length === 0) return
-    setEscalation(null)
-    setEscalationTicketId(null)
 
     if (!effectiveSessionId) {
       setPendingFirstMessage(text || `[${files.map((f) => f.name).join(", ")}]`)
@@ -210,16 +106,36 @@ export const AssistantScreen = () => {
     setActiveSessionId(null)
     setInputValue("")
     setPendingFirstMessage(null)
-    setEscalation(null)
-    setEscalationTicketId(null)
+    setTicketId(null)
+    setTicketStatus(null)
+    setTicketTitle(null)
+    setSolutionOffered(false)
+  }
+
+  const handleResolve = () => {
+    if (!effectiveSessionId) return
+    resolveChat(effectiveSessionId, {
+      onSuccess: () => setTicketStatus("closed"),
+    })
   }
 
   const isSending = sendMessage.isPending || createSession.isPending
+  const isChatClosed = ticketStatus === "closed"
+  const isWaitingForOperator = ticketStatus === "waiting_for_operator"
+  const isChatBlocked = isChatClosed || isWaitingForOperator
   const activeSession = sessions.find((s) => s.id === effectiveSessionId)
 
   const uniqueMessages = messages.filter(
     (msg, idx, arr) => arr.findIndex((m) => m.id === msg.id) === idx,
   )
+
+  const hasAssistantResponse = uniqueMessages.some((m) => m.role === "assistant")
+  const showResolveButton =
+    !isSending &&
+    !isChatBlocked &&
+    solutionOffered &&
+    hasAssistantResponse &&
+    !!effectiveSessionId
 
   return (
     <div className={styles.page}>
@@ -230,8 +146,10 @@ export const AssistantScreen = () => {
         isLoading={sessionsLoading}
         onSelect={(id) => {
           setActiveSessionId(id)
-          setEscalation(null)
-          setEscalationTicketId(null)
+          setTicketId(null)
+          setTicketStatus(null)
+          setTicketTitle(null)
+          setSolutionOffered(false)
         }}
         onNewChat={handleNewChat}
       />
@@ -240,7 +158,7 @@ export const AssistantScreen = () => {
         <div className={styles.mainHeader}>
           <div className={styles.chatTitle}>
             {activeSession ? (
-              <h1 className={styles.sessionTitle}>{activeSession.title}</h1>
+              <h1 className={styles.sessionTitle}>{ticketTitle ?? activeSession.title}</h1>
             ) : (
               <h1 className={styles.sessionTitle}>Новый чат</h1>
             )}
@@ -298,22 +216,30 @@ export const AssistantScreen = () => {
             </div>
           )}
 
-          {escalationTicketId && (
-            <p className={styles.escalationSuccess}>
-              ✓ Обращение создано. Специалист свяжется с вами.
-            </p>
+          {isChatClosed && (
+            <div className={`${styles.systemBanner} ${styles.bannerClosed}`}>
+              <CheckCircle size={16} />
+              Рад помочь! Обращение закрыто.
+            </div>
           )}
 
-          {!isSending && escalation && !escalationTicketId && effectiveSessionId && (
-            <EscalationBanner
-              chatId={effectiveSessionId}
-              info={escalation}
-              onDismiss={() => setEscalation(null)}
-              onSuccess={(ticketId) => {
-                setEscalation(null)
-                setEscalationTicketId(ticketId)
-              }}
-            />
+          {isWaitingForOperator && (
+            <div className={`${styles.systemBanner} ${styles.bannerWaiting}`}>
+              <Clock size={16} />
+              Обращение передано оператору. Ожидайте ответа.
+            </div>
+          )}
+
+          {showResolveButton && (
+            <div className={styles.resolveBar}>
+              <button
+                className={styles.resolveButton}
+                onClick={handleResolve}
+                disabled={isResolving}
+              >
+                {isResolving ? "Закрываем..." : "✓ Проблема решена"}
+              </button>
+            </div>
           )}
 
           <div ref={messagesEndRef} />
@@ -323,7 +249,7 @@ export const AssistantScreen = () => {
           value={inputValue}
           onChange={setInputValue}
           onSubmit={handleSend}
-          disabled={isSending}
+          disabled={isSending || isChatBlocked}
         />
       </main>
     </div>

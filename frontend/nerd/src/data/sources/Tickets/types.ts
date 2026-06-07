@@ -1,4 +1,11 @@
-export type TicketStatusDto = "open" | "in_progress" | "closed" | "reopened"
+export type TicketStatusDto =
+  | "open"
+  | "in_progress"
+  | "closed"
+  | "reopened"
+  | "waiting_for_operator"
+  | "in_operator_processing"
+  | string
 export type TicketPriorityDto = "low" | "medium" | "high"
 export type TicketProductDto =
   | "веб-сервис"
@@ -12,7 +19,8 @@ export interface TicketDto {
   id: string
   client_id: string
   responsible_id: string | null
-  product: TicketProductDto
+  title?: string | null
+  product: TicketProductDto | null
   status: TicketStatusDto
   priority: TicketPriorityDto
   date: string

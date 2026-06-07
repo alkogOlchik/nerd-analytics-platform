@@ -1,19 +1,19 @@
 import { useState, type ReactNode } from "react"
-import { Circle, Loader, CheckCircle, RotateCcw, FileText } from "lucide-react"
+import { Loader, CheckCircle, FileText, Clock, UserCheck } from "lucide-react"
 import styles from "./TicketsScreen.module.scss"
 import { Sidebar, UserMenu, TicketCard } from "modules"
 import { useTickets, useUpdateTicketStatus } from "domain/Tickets"
 import { useMe } from "domain/Auth/useMe"
 import type { Ticket, TicketStatus } from "data/repositories/Tickets"
 
-type TabValue = "all" | TicketStatus
+type TabValue = "all" | TicketStatus | string
 
 const TABS: { value: TabValue; label: string; icon: ReactNode }[] = [
   { value: "all", label: "Все", icon: <FileText size={15} /> },
-  { value: "open", label: "Открытые", icon: <Circle size={15} /> },
-  { value: "in_progress", label: "В обработке", icon: <Loader size={15} /> },
+  { value: "in_progress", label: "В работе", icon: <Loader size={15} /> },
+  { value: "waiting_for_operator", label: "Ожидание оператора", icon: <Clock size={15} /> },
+  { value: "in_operator_processing", label: "У оператора", icon: <UserCheck size={15} /> },
   { value: "closed", label: "Закрытые", icon: <CheckCircle size={15} /> },
-  { value: "reopened", label: "Переоткрытые", icon: <RotateCcw size={15} /> },
 ]
 
 const PRODUCTS = [
@@ -25,17 +25,29 @@ const PRODUCTS = [
   "аналитический модуль",
 ]
 
-const STATUS_LABELS: Record<TicketStatus, string> = {
-  open: "Открыт",
-  in_progress: "В обработке",
+const STATUS_LABELS: Record<string, string> = {
+  in_progress: "В работе",
+  waiting_for_operator: "Ожидание оператора",
+  in_operator_processing: "У оператора",
   closed: "Закрыт",
+  // backward compat
+  open: "Открыт",
   reopened: "Переоткрыт",
+  "принято": "Принято",
+  "в_работе": "В работе",
+  "требуется_информация": "Требуется информация",
+  "передано_разработчикам": "У разработчиков",
+  "исправлено": "Исправлено",
+  "закрыто": "Закрыт",
+  "отклонено": "Отклонено",
 }
 
-const STATUS_BADGE: Record<TicketStatus, string> = {
-  open: styles.statusOpen,
+const STATUS_BADGE: Record<string, string> = {
   in_progress: styles.statusInProgress,
+  waiting_for_operator: styles.statusWaiting,
+  in_operator_processing: styles.statusOperator,
   closed: styles.statusClosed,
+  open: styles.statusOpen,
   reopened: styles.statusReopened,
 }
 
@@ -51,18 +63,18 @@ const PRIORITY_BADGE: Record<string, string> = {
   high: styles.priorityHigh,
 }
 
-const NEXT_STATUSES: TicketStatus[] = ["open", "in_progress", "closed"]
+const NEXT_STATUSES: string[] = ["in_progress", "waiting_for_operator", "in_operator_processing", "closed"]
 
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString("ru-RU", { day: "numeric", month: "short" })
 
 const AdminTicketRow = ({ ticket }: { ticket: Ticket }) => {
   const { mutate: patchStatus, isPending } = useUpdateTicketStatus()
-  const [selectedStatus, setSelectedStatus] = useState<TicketStatus>(ticket.status)
+  const [selectedStatus, setSelectedStatus] = useState<string>(ticket.status)
 
-  const handleStatusChange = (status: TicketStatus) => {
+  const handleStatusChange = (status: string) => {
     setSelectedStatus(status)
-    patchStatus({ id: ticket.id, status })
+    patchStatus({ id: ticket.id, status: status as TicketStatus })
   }
 
   const category = ticket.finalCategory ?? ticket.aiSuggestedCategory
@@ -70,9 +82,9 @@ const AdminTicketRow = ({ ticket }: { ticket: Ticket }) => {
   return (
     <div className={styles.ticketRow}>
       <div className={styles.rowTop}>
-        <span className={styles.ticketProduct}>{ticket.product}</span>
-        <span className={`${styles.badge} ${STATUS_BADGE[selectedStatus]}`}>
-          {STATUS_LABELS[selectedStatus]}
+        <span className={styles.ticketProduct}>{ticket.title ?? ticket.product ?? "—"}</span>
+        <span className={`${styles.badge} ${STATUS_BADGE[selectedStatus] ?? styles.statusInProgress}`}>
+          {STATUS_LABELS[selectedStatus] ?? selectedStatus}
         </span>
         <span className={`${styles.badge} ${PRIORITY_BADGE[ticket.priority]}`}>
           {PRIORITY_LABELS[ticket.priority] ?? ticket.priority}
@@ -92,7 +104,7 @@ const AdminTicketRow = ({ ticket }: { ticket: Ticket }) => {
           className={styles.actionSelect}
           value={selectedStatus}
           disabled={isPending}
-          onChange={(e) => handleStatusChange(e.target.value as TicketStatus)}
+          onChange={(e) => handleStatusChange(e.target.value)}
         >
           {NEXT_STATUSES.map((s) => (
             <option key={s} value={s}>

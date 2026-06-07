@@ -122,6 +122,27 @@
   opacity: 0.7;
 }
 
+.itemStatus {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  &.statusInProgress { color: #93c5fd; background: rgba(147, 197, 253, 0.1); }
+  &.statusWaiting { color: #fbbf24; background: rgba(251, 191, 36, 0.1); }
+  &.statusOperator { color: #f97316; background: rgba(249, 115, 22, 0.1); }
+  &.statusClosed { color: #86efac; background: rgba(134, 239, 172, 0.1); }
+}
+
+.itemTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
 .empty {
   font-size: 13px;
   color: var(--color-text-secondary, #888);

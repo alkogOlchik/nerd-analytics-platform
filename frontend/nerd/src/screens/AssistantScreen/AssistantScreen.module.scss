@@ -340,3 +340,57 @@
   color: #86efac;
   text-align: center;
 }
+
+/* Resolve / operator banners */
+.resolveBar {
+  display: flex;
+  justify-content: center;
+  margin: 8px 0 4px;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.resolveButton {
+  padding: 10px 24px;
+  border-radius: 10px;
+  border: none;
+  background: rgba(134, 239, 172, 0.15);
+  border: 1px solid rgba(134, 239, 172, 0.3);
+  color: #86efac;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover:not(:disabled) {
+    background: rgba(134, 239, 172, 0.25);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.systemBanner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 4px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  animation: fadeIn 0.3s ease-out;
+
+  &.bannerClosed {
+    background: rgba(134, 239, 172, 0.08);
+    border: 1px solid rgba(134, 239, 172, 0.2);
+    color: #86efac;
+  }
+
+  &.bannerWaiting {
+    background: rgba(251, 191, 36, 0.08);
+    border: 1px solid rgba(251, 191, 36, 0.2);
+    color: #fbbf24;
+  }
+}
