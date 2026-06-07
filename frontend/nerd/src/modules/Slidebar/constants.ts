@@ -23,6 +23,12 @@ export const NAVIGATION_ITEMS: SidebarItem[] = [
     path: routes.tickets,
   },
   {
+    id: "myReviews",
+    label: "Мои отзывы",
+    icon: Star,
+    path: routes.myReviews,
+  },
+  {
     id: "analytics",
     label: "Аналитика",
     icon: BarChart2,
@@ -33,11 +39,5 @@ export const NAVIGATION_ITEMS: SidebarItem[] = [
     label: "Уведомления",
     icon: Bell,
     path: routes.notifications,
-  },
-  {
-    id: "myReviews",
-    label: "Мои отзывы",
-    icon: Star,
-    path: routes.myReviews,
   },
 ]
