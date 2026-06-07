@@ -9,6 +9,7 @@ import { UsersDashboard } from "./dashboards/UsersDashboard"
 import { ReviewsDashboard } from "./dashboards/ReviewsDashboard"
 import { TicketsDetailDashboard } from "./dashboards/TicketsDetailDashboard"
 import { AnalyticsChatPanel } from "./components/AnalyticsChatPanel"
+import { useAnalyticsDashboardContext } from "./hooks/useAnalyticsDashboardContext"
 import styles from "./styles.module.scss"
 
 type DashboardId = "overview" | "ai" | "admins" | "users" | "reviews" | "tickets"
@@ -40,6 +41,7 @@ const DASHBOARD_MAP: Record<DashboardId, React.FC> = {
 export const AnalyticsScreen = () => {
   const [active, setActive] = useState<DashboardId>("overview")
   const ActiveDashboard = DASHBOARD_MAP[active]
+  const dashboardContext = useAnalyticsDashboardContext(active)
 
   return (
     <div className={styles.page}>
@@ -67,7 +69,7 @@ export const AnalyticsScreen = () => {
           <div className={styles.content}>
             <ActiveDashboard />
           </div>
-          <AnalyticsChatPanel />
+          <AnalyticsChatPanel context={dashboardContext} />
         </div>
       </main>
     </div>

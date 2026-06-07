@@ -8,7 +8,11 @@ interface ChatMsg {
   text: string
 }
 
-export const AnalyticsChatPanel = () => {
+interface Props {
+  context?: string
+}
+
+export const AnalyticsChatPanel = ({ context }: Props) => {
   const [messages, setMessages] = useState<ChatMsg[]>([])
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
@@ -28,8 +32,9 @@ export const AnalyticsChatPanel = () => {
     setLoading(true)
 
     try {
+      const message = context ? `${context}\n\nВопрос аналитика: ${text}` : text
       const { data } = await apiClient.post<{ answer: string }>("/ai/analytics/query", {
-        message: text,
+        message,
       })
       setMessages((prev) => [...prev, { role: "assistant", text: data.answer }])
     } catch {
