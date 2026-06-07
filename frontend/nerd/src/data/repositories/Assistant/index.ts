@@ -65,6 +65,7 @@ export const assistantRepository = {
       assistantMessage: {
         ...mapMessage(res.assistant_message),
         ...(res.video_url ? { videoUrl: res.video_url } : {}),
+        ...(res.steps?.length ? { steps: res.steps } : {}),
       },
       solutionOffered: res.solution_offered,
       ticketId: res.ticket_id,
@@ -82,10 +83,11 @@ export const assistantRepository = {
     }
     const res = await assistantSource.createSession({ first_message: firstMessage, file_ids })
     const mappedMessages = res.messages.map(mapMessage)
-    if (res.video_url && mappedMessages.length >= 2) {
+    if ((res.video_url || res.steps?.length) && mappedMessages.length >= 2) {
       mappedMessages[mappedMessages.length - 1] = {
         ...mappedMessages[mappedMessages.length - 1],
-        videoUrl: res.video_url,
+        ...(res.video_url ? { videoUrl: res.video_url } : {}),
+        ...(res.steps?.length ? { steps: res.steps } : {}),
       }
     }
     return {

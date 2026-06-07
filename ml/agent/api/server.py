@@ -90,6 +90,32 @@ async def _get_job_or_404(job_id: str) -> Dict[str, Any]:
         return dict(job)
 
 
+_TOOL_LABELS: Dict[str, str] = {
+    "rag_search": "🔍 Поиск в базе знаний",
+    "run_analytics": "📊 Аналитический расчёт",
+    "record_web_guide": "🎬 Запись видео-гайда",
+    "escalate_to_operator": "👤 Передача оператору",
+    "submit_review": "⭐ Сохранение отзыва",
+    "_llm": "❌ Ошибка LLM",
+}
+
+
+def _build_steps(observations: list) -> list[str]:
+    seen: set[str] = set()
+    steps = []
+    for obs in observations:
+        tool = obs.get("tool_name", "")
+        label = _TOOL_LABELS.get(tool, f"🔧 {tool}") if tool else None
+        if not label:
+            continue
+        if obs.get("error"):
+            label = f"{label} (ошибка)"
+        if label not in seen:
+            seen.add(label)
+            steps.append(label)
+    return steps
+
+
 async def _run_query(query: str, model: LlmModel) -> Dict[str, Any]:
     logger.info("query | start | chars=%d model=%s", len(query), model.value)
     initial = {
@@ -99,18 +125,20 @@ async def _run_query(query: str, model: LlmModel) -> Dict[str, Any]:
     result = await graph.ainvoke(initial)
     answer = result.get("final_answer") or "(no answer)"
     iterations = int(result.get("iterations") or 0)
-    observations = len(result.get("observations") or [])
+    obs_list = result.get("observations") or []
     logger.info(
         "query | done | iterations=%d observations=%d answer_chars=%d",
         iterations,
-        observations,
+        len(obs_list),
         len(answer),
     )
+    steps = _build_steps(obs_list)
     response: Dict[str, Any] = {
         "answer": answer,
         "model": model.value,
         "iterations": iterations,
-        "observations_count": observations,
+        "observations_count": len(obs_list),
+        "steps": steps or None,
     }
     if result.get("escalate_to_operator"):
         response["escalate_to_operator"] = True

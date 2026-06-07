@@ -6,6 +6,7 @@ import styles from "./styles.module.scss"
 interface ChatMsg {
   role: "user" | "assistant"
   text: string
+  steps?: string[]
 }
 
 interface Props {
@@ -33,10 +34,13 @@ export const AnalyticsChatPanel = ({ context }: Props) => {
 
     try {
       const message = context ? `${context}\n\nВопрос аналитика: ${text}` : text
-      const { data } = await apiClient.post<{ answer: string }>("/ai/analytics/query", {
+      const { data } = await apiClient.post<{ answer: string; steps?: string[] | null }>("/ai/analytics/query", {
         message,
       })
-      setMessages((prev) => [...prev, { role: "assistant", text: data.answer }])
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", text: data.answer, steps: data.steps ?? undefined },
+      ])
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -73,14 +77,23 @@ export const AnalyticsChatPanel = ({ context }: Props) => {
             key={i}
             className={msg.role === "user" ? styles.msgUser : styles.msgAssistant}
           >
+            {msg.role === "assistant" && msg.steps && msg.steps.length > 0 && (
+              <div className={styles.msgSteps}>
+                {msg.steps.map((s, j) => (
+                  <span key={j} className={styles.msgStep}>{s}</span>
+                ))}
+              </div>
+            )}
             {msg.text}
           </div>
         ))}
         {loading && (
           <div className={styles.msgAssistant}>
-            <span className={styles.dot} />
-            <span className={styles.dot} />
-            <span className={styles.dot} />
+            <div className={styles.dots}>
+              <span className={styles.dot} />
+              <span className={styles.dot} />
+              <span className={styles.dot} />
+            </div>
           </div>
         )}
         <div ref={bottomRef} />

@@ -16,6 +16,7 @@ export interface Message {
   createdAt: string
   ticketId?: string | null
   videoUrl?: string
+  steps?: string[]
 }
 
 export interface EscalationInfo {

@@ -96,6 +96,7 @@ async def chat(
         await ai_service.chat(db, current_user.id, data)
     )
     video_url = ml_response.get("video_url") if isinstance(ml_response, dict) else None
+    steps = ml_response.get("steps") if isinstance(ml_response, dict) else None
     return ChatResponse(
         chat_id=chat_id,
         ticket_id=ticket_id,
@@ -107,6 +108,7 @@ async def chat(
         ml_response=ml_response,
         escalation=escalation,
         video_url=video_url,
+        steps=steps,
     )
 
 
@@ -270,6 +272,8 @@ async def analytics_query(
     _: CurrentUser = Depends(get_current_user),
 ):
     """Lightweight analytics chat — no ticket creation, just ML proxy with analytics context."""
-    prefixed = f"Режим: аналитический ассистент. Пользователь изучает дашборд аналитики.\n\n{req.message}"
+    msg = req.message[:4000] if len(req.message) > 4000 else req.message
+    prefixed = f"Режим: аналитический ассистент. Пользователь изучает дашборд аналитики.\n\n{msg}"
     result = await ml_client.query(prefixed, model=req.model)
-    return {"answer": result.answer}
+    steps = result.raw.get("steps") if result.raw else None
+    return {"answer": result.answer, "steps": steps}

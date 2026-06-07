@@ -32,6 +32,7 @@ export interface ApiChatResponse {
   ml_response: Record<string, unknown>
   escalation: EscalationOffer | null
   video_url?: string | null
+  steps?: string[] | null
 }
 
 export interface SendMessageRequest {
@@ -88,6 +89,7 @@ export interface SendMessageResponse {
   solution_offered: boolean
   escalation: EscalationOffer | null
   video_url?: string | null
+  steps?: string[] | null
 }
 
 export interface CreateSessionResponse {
@@ -99,4 +101,5 @@ export interface CreateSessionResponse {
   solution_offered: boolean
   escalation: EscalationOffer | null
   video_url?: string | null
+  steps?: string[] | null
 }

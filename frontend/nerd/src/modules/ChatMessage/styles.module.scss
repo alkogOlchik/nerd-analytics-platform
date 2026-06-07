@@ -56,6 +56,21 @@
   word-break: break-word;
 }
 
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.step {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  line-height: 1.4;
+}
+
 .videoBlock {
   margin-top: 10px;
   display: flex;

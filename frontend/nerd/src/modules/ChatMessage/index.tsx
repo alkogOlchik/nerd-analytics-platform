@@ -15,6 +15,13 @@ export const ChatMessage = ({ message }: ChatMessageProps) => {
       )}
 
       <div className={clsx(styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAssistant)}>
+        {!isUser && message.steps && message.steps.length > 0 && (
+          <div className={styles.steps}>
+            {message.steps.map((step, i) => (
+              <span key={i} className={styles.step}>{step}</span>
+            ))}
+          </div>
+        )}
         <p className={styles.content}>{message.content}</p>
         {message.videoUrl && (
           <div className={styles.videoBlock}>
