@@ -9,22 +9,35 @@ import type {
   UploadedFileDto,
 } from "./types"
 
-const SESSIONS_KEY = "nerd_chat_sessions"
+const getUserId = (): string => {
+  const token = localStorage.getItem("access_token")
+  if (!token) return "anon"
+  try {
+    return (JSON.parse(atob(token.split(".")[1])) as { sub?: string }).sub ?? "anon"
+  } catch {
+    return "anon"
+  }
+}
+
+const sessionsKey = () => `nerd_chat_sessions_${getUserId()}`
 
 const loadSessions = (): ChatSessionDto[] => {
   try {
-    return JSON.parse(localStorage.getItem(SESSIONS_KEY) ?? "[]") as ChatSessionDto[]
+    return JSON.parse(localStorage.getItem(sessionsKey()) ?? "[]") as ChatSessionDto[]
   } catch {
     return []
   }
 }
 
 const saveSessions = (sessions: ChatSessionDto[]) => {
-  localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions))
+  localStorage.setItem(sessionsKey(), JSON.stringify(sessions))
 }
 
 interface ApiChatResponse {
   chat_id: string
+  ticket_id?: string | null
+  ticket_title?: string | null
+  ai_needs_escalation?: boolean
   user_message: MessageDto
   assistant_message: MessageDto
   ml_response: Record<string, unknown>
@@ -58,6 +71,7 @@ export const assistantSource = {
       message: req.content,
       model: "gemma4:e2b",
       chat_id: req.chat_id,
+      ...(req.ticket_id ? { ticket_id: req.ticket_id } : {}),
       ...(req.file_ids?.length ? { file_ids: req.file_ids } : {}),
     })
 
@@ -69,7 +83,11 @@ export const assistantSource = {
       saveSessions(sessions)
     }
 
-    return { user_message: data.user_message, assistant_message: data.assistant_message }
+    return {
+      user_message: data.user_message,
+      assistant_message: data.assistant_message,
+      escalation: data.ticket_id ? data.ai_needs_escalation : undefined,
+    }
   },
 
   createSession: async (req: CreateSessionRequest): Promise<CreateSessionResponse> => {
@@ -79,8 +97,8 @@ export const assistantSource = {
       ...(req.file_ids?.length ? { file_ids: req.file_ids } : {}),
     })
 
-    const title =
-      req.first_message.length > 40 ? req.first_message.slice(0, 40) + "…" : req.first_message
+    const title = data.ticket_title
+      ?? (req.first_message.length > 40 ? req.first_message.slice(0, 40) + "…" : req.first_message)
 
     const session: ChatSessionDto = {
       id: data.chat_id,
@@ -88,6 +106,7 @@ export const assistantSource = {
       created_at: data.user_message.created_at,
       updated_at: data.assistant_message.created_at,
       last_message: data.assistant_message.message,
+      ticket_id: data.ticket_id ?? null,
     }
 
     const sessions = loadSessions()

@@ -20,7 +20,7 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     op.create_table(
         "general",
-        sa.Column("ticket_id", sa.Integer(), primary_key=True),
+        sa.Column("ticket_id", postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column("created_at", sa.Date(), nullable=True),
         sa.Column("closed_at", sa.Date(), nullable=True),
         sa.Column("product", sa.String(128), nullable=True),
@@ -37,8 +37,8 @@ def upgrade() -> None:
     )
     op.create_table(
         "ai_effective",
-        sa.Column("dialog_id", sa.Integer(), primary_key=True),
-        sa.Column("ticket_id", sa.Integer(), nullable=True),
+        sa.Column("dialog_id", postgresql.UUID(as_uuid=True), primary_key=True),
+        sa.Column("ticket_id", postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column("date", sa.Date(), nullable=True),
         sa.Column("product", sa.String(128), nullable=True),
         sa.Column("msg_count_before_escalation", sa.Integer(), nullable=True),
@@ -55,7 +55,7 @@ def upgrade() -> None:
 
     op.create_table(
         "admin_effective",
-        sa.Column("ticket_id", sa.Integer(), primary_key=True),
+        sa.Column("ticket_id", postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column("date", sa.Date(), nullable=True),
         sa.Column("hour", sa.Integer(), nullable=True),
         sa.Column("day_of_week", sa.String(32), nullable=True),
@@ -74,7 +74,7 @@ def upgrade() -> None:
     )
     op.create_table(
         "fact_users",
-        sa.Column("user_id", sa.Integer(), primary_key=True),
+        sa.Column("user_id", postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column("registration_date", sa.Date(), nullable=True),
         sa.Column("gender", sa.String(16), nullable=True),
         sa.Column("age_group", sa.String(32), nullable=True),
@@ -91,8 +91,8 @@ def upgrade() -> None:
     )
     op.create_table(
         "fact_reviews",
-        sa.Column("review_id", sa.Integer(), primary_key=True),
-        sa.Column("ticket_id", sa.Integer(), nullable=True),
+        sa.Column("review_id", postgresql.UUID(as_uuid=True), primary_key=True),
+        sa.Column("ticket_id", postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column("date", sa.Date(), nullable=True),
         sa.Column("product", sa.String(128), nullable=True),
         sa.Column("category", sa.String(128), nullable=True),
@@ -108,7 +108,7 @@ def upgrade() -> None:
 
     op.create_table(
         "fact_problems",
-        sa.Column("ticket_id", sa.Integer(), primary_key=True),
+        sa.Column("ticket_id", postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column("date", sa.Date(), nullable=True),
         sa.Column("hour", sa.Integer(), nullable=True),
         sa.Column("day_of_week", sa.String(32), nullable=True),

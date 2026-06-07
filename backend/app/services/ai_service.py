@@ -3,6 +3,7 @@
 import json
 import re
 import uuid
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from fastapi import HTTPException, status
@@ -11,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.models.chat import ChatHistory
 from backend.app.models.chat_file import ChatFile
-from backend.app.models.enums import ChatRole, ReviewCategory, Sentiment, TicketCategory
+from backend.app.models.enums import ChatRole, ReviewCategory, Sentiment, TicketCategory, TicketStatus
 from backend.app.models.review import Review
 from backend.app.models.ticket import Ticket
 from backend.app.schemas.ai import ChatRequest, EscalationOffer
@@ -21,6 +22,23 @@ from backend.app.utils.keywords import join_keywords
 
 _TICKET_CATEGORY_VALUES = ", ".join(t.value for t in TicketCategory)
 _REVIEW_CATEGORY_VALUES = ", ".join(t.value for t in ReviewCategory)
+
+_TITLE_PROMPT = """Придумай краткое название проблемы (5–8 слов) на основе сообщения пользователя.
+Верни ТОЛЬКО строку — название, без кавычек и объяснений.
+
+Сообщение: {text}"""
+
+_ESCALATE_MARKER = "[ESCALATE]"
+
+_SYSTEM_PROMPT = (
+    "Ты — ИИ-помощник службы поддержки. Отвечай на вопросы пользователя. "
+    "Если проблема требует вмешательства живого оператора (технический баг, "
+    "жалоба на обслуживание, возврат средств, ситуация вне твоей компетенции) — "
+    "напиши пользователю понятное сообщение о том, что передаёшь его оператору "
+    "(например: 'Эта ситуация требует помощи специалиста. Передаю ваш вопрос оператору — ожидайте ответа.'), "
+    f"а затем добавь в самый конец маркер {_ESCALATE_MARKER} без каких-либо пояснений к нему. "
+    "Никогда не отвечай пустым сообщением — всегда пиши что-то содержательное."
+)
 
 _TICKET_CLASSIFY_PROMPT = """Классифицируй обращение в службу поддержки.
 Верни ТОЛЬКО валидный JSON без markdown:
@@ -158,6 +176,35 @@ async def classify_review(
 
 
 
+async def _auto_create_ticket(
+    db: AsyncSession,
+    client_id: uuid.UUID,
+    chat_id: uuid.UUID,
+    first_message: str,
+    model: str,
+) -> Ticket:
+    title_prompt = _TITLE_PROMPT.format(text=first_message[:500])
+    try:
+        title_result = await ml_client.query(title_prompt, model=model)
+        title = title_result.answer.strip().strip('"').strip("'")[:200] or first_message[:80]
+    except Exception:
+        title = first_message[:80]
+
+    now = datetime.now(timezone.utc)
+    ticket = Ticket(
+        client_id=client_id,
+        title=title,
+        product=None,
+        status="в_работе",
+        priority="medium",
+        date=now,
+        deadline=now + timedelta(days=3),
+    )
+    db.add(ticket)
+    await db.flush()
+    return ticket
+
+
 def _message_for_ml(data: ChatRequest) -> str:
     text = data.message.strip()
     if text:
@@ -172,8 +219,13 @@ async def chat(
     db: AsyncSession,
     client_id: uuid.UUID,
     data: ChatRequest,
-) -> tuple[uuid.UUID, ChatHistory, ChatHistory, dict, EscalationOffer | None]:
+) -> tuple[uuid.UUID, uuid.UUID | None, str | None, bool, ChatHistory, ChatHistory, dict, EscalationOffer | None]:
     ticket: Ticket | None = None
+    auto_ticket: Ticket | None = None
+    auto_ticket_id: uuid.UUID | None = None
+    auto_ticket_title: str | None = None
+    is_first_message = not data.chat_id
+
     if data.ticket_id:
         ticket_result = await db.execute(select(Ticket).where(Ticket.id == data.ticket_id))
         ticket = ticket_result.scalar_one_or_none()
@@ -185,6 +237,12 @@ async def chat(
     chat_id = data.chat_id or uuid.uuid4()
     product = data.product or (ticket.product if ticket else None)
     category = data.category or (ticket.final_category or ticket.ai_suggested_category if ticket else None)
+
+    if is_first_message and not data.ticket_id:
+        first_text = data.message.strip() or "Новое обращение"
+        auto_ticket = await _auto_create_ticket(db, client_id, chat_id, first_text, data.model)
+        auto_ticket_id = auto_ticket.id  # type: ignore[union-attr]
+        auto_ticket_title = auto_ticket.title  # type: ignore[union-attr]
 
     context_parts: list[str] = []
     if data.file_ids:
@@ -224,9 +282,12 @@ async def chat(
 
     current_query = "\n\n".join(context_parts + [data.message]) if context_parts else _message_for_ml(data)
     if history_parts:
-        ml_text = "История диалога:\n" + "\n".join(history_parts) + "\n\nТекущий вопрос:\n" + current_query
+        ml_text = (
+            _SYSTEM_PROMPT + "\n\n"
+            "История диалога:\n" + "\n".join(history_parts) + "\n\nТекущий вопрос:\n" + current_query
+        )
     else:
-        ml_text = current_query
+        ml_text = _SYSTEM_PROMPT + "\n\n" + current_query
 
     user_msg = ChatHistory(
         chat_id=chat_id,
@@ -243,7 +304,11 @@ async def chat(
 
     escalation: EscalationOffer | None = None
     ml_result = await ml_client.query(ml_text, model=data.model)
-    answer = ml_result.answer
+    raw_answer = ml_result.answer
+    ai_needs_escalation = _ESCALATE_MARKER in raw_answer
+    answer = raw_answer.replace(_ESCALATE_MARKER, "").strip()
+    if not answer:
+        answer = "Ваш запрос принят. Если у вас остались вопросы — напишите."
     ml_response: dict = ml_result.raw or {"answer": answer, "model": ml_result.model}
 
     assistant_msg = ChatHistory(
@@ -257,11 +322,18 @@ async def chat(
         message=answer,
     )
     db.add(assistant_msg)
+
+    if ai_needs_escalation:
+        ticket_to_update = auto_ticket or ticket
+        if ticket_to_update:
+            ticket_to_update.status = TicketStatus.needs_info.value
+            ticket_to_update.status_updated_at = datetime.now(timezone.utc)
+
     await db.commit()
     await db.refresh(user_msg)
     await db.refresh(assistant_msg)
 
-    return chat_id, user_msg, assistant_msg, ml_response, escalation
+    return chat_id, auto_ticket_id, auto_ticket_title, ai_needs_escalation, user_msg, assistant_msg, ml_response, escalation
 
 
 async def get_chat_history(

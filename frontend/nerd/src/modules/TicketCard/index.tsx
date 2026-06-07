@@ -3,9 +3,12 @@ import type { TicketCardProps } from "./types"
 import type { TicketStatus, TicketPriority } from "data/repositories/Tickets"
 
 const STATUS_CONFIG: Record<TicketStatus, { label: string; className: string }> = {
-  open: { label: "Открыт", className: styles.statusOpen },
-  in_progress: { label: "В обработке", className: styles.statusInProgress },
-  closed: { label: "Закрыт", className: styles.statusClosed },
+  open: { label: "В работе", className: styles.statusInProgress },
+  in_progress: { label: "В работе", className: styles.statusInProgress },
+  waiting: { label: "В ожидании оператора", className: styles.statusWaiting },
+  processing: { label: "Обрабатывается оператором", className: styles.statusProcessing },
+  done: { label: "Закрыто", className: styles.statusDone },
+  closed: { label: "Закрыто", className: styles.statusClosed },
   reopened: { label: "Переоткрыт", className: styles.statusReopened },
 }
 
@@ -31,7 +34,7 @@ export const TicketCard = ({ ticket }: TicketCardProps) => {
         <span className={`${styles.statusBadge} ${status.className}`}>{status.label}</span>
       </div>
 
-      <h3 className={styles.title}>{ticket.product}</h3>
+      <h3 className={styles.title}>{ticket.title ?? ticket.product ?? "Обращение"}</h3>
       {subtitle && <p className={styles.description}>{subtitle}</p>}
 
       <div className={styles.cardFooter}>

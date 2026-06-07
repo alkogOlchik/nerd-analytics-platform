@@ -4,6 +4,7 @@ export interface ChatSessionDto {
   created_at: string
   updated_at: string
   last_message?: string
+  ticket_id?: string | null
 }
 
 // Matches ChatMessageResponse from POST /ai/chat and GET /ai/chat/history
@@ -23,6 +24,7 @@ export interface SendMessageRequest {
   chat_id: string
   content: string
   file_ids?: string[]
+  ticket_id?: string
 }
 
 export interface CreateSessionRequest {
@@ -41,6 +43,7 @@ export interface UploadedFileDto {
 export interface SendMessageResponse {
   user_message: MessageDto
   assistant_message: MessageDto
+  escalation?: boolean
 }
 
 export interface CreateSessionResponse {

@@ -228,3 +228,83 @@
     transform: translateY(0);
   }
 }
+
+.ticketActions {
+  display: flex;
+  gap: 8px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border-color, #e5e7eb);
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: opacity 0.15s;
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+  }
+}
+
+.resolveBtn {
+  background: #22c55e;
+  color: #fff;
+
+  &:hover:not(:disabled) {
+    background: #16a34a;
+  }
+}
+
+.escalateBtn {
+  background: transparent;
+  color: var(--text-secondary, #6b7280);
+  border: 1px solid var(--border-color, #e5e7eb) !important;
+
+  &:hover:not(:disabled) {
+    background: var(--bg-hover, #f3f4f6);
+  }
+}
+
+.closingMessage {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 4px 0;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.closingAvatar {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #818cf8;
+}
+
+.closingBubble {
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 12px 12px 12px 2px;
+  padding: 10px 14px;
+  max-width: 75%;
+}
+
+.closingText {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #c7d2fe;
+}

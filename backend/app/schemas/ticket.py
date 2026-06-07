@@ -45,7 +45,8 @@ class TicketResponse(BaseModel):
     id: uuid.UUID
     client_id: uuid.UUID
     responsible_id: uuid.UUID | None
-    product: str
+    title: str | None = None
+    product: str | None = None
     status: str
     priority: str
     user_priority: str | None = None

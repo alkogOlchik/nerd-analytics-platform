@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react"
 import { useLocation } from "react-router-dom"
-import { Bot, User2 } from "lucide-react"
+import { Bot, User2, CheckCircle2 } from "lucide-react"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import styles from "./AssistantScreen.module.scss"
 import { Sidebar, UserMenu } from "modules"
 import { ChatHistory } from "modules/ChatHistory"
@@ -10,6 +11,7 @@ import { useChatSessions } from "domain/Assistant/useChatSessions"
 import { useMessages } from "domain/Assistant/useMessages"
 import { useSendMessage } from "domain/Assistant/useSendMessage"
 import { useCreateSession } from "domain/Assistant/useCreateSession"
+import { apiClient } from "data/apiClient"
 import type { CreateSessionResult } from "data/repositories/Assistant"
 
 export const AssistantScreen = () => {
@@ -17,9 +19,12 @@ export const AssistantScreen = () => {
   const [activeSessionId, setActiveSessionId] = useState<string | null | undefined>(undefined)
   const [inputValue, setInputValue] = useState("")
   const [pendingFirstMessage, setPendingFirstMessage] = useState<string | null>(null)
+  const [closingMessage, setClosingMessage] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const location = useLocation()
   const autoSentRef = useRef(false)
+  // Synchronous guard: isPending is async (React state), so two calls can slip through before re-render
+  const sessionCreatingRef = useRef(false)
 
   const { data: sessions = [], isLoading: sessionsLoading } = useChatSessions()
 
@@ -27,7 +32,11 @@ export const AssistantScreen = () => {
     activeSessionId !== undefined ? activeSessionId : (sessions[0]?.id ?? null)
 
   const { data: messages = [], isLoading: messagesLoading } = useMessages(effectiveSessionId)
-  const sendMessage = useSendMessage(effectiveSessionId)
+
+  const activeSession = sessions.find((s) => s.id === effectiveSessionId)
+  const ticketId = activeSession?.ticketId ?? null
+
+  const sendMessage = useSendMessage(effectiveSessionId, ticketId)
 
   const handleSessionCreated = (result: CreateSessionResult) => {
     setActiveSessionId(result.session.id)
@@ -43,24 +52,36 @@ export const AssistantScreen = () => {
     const initialMsg = (location.state as { initialMessage?: string })?.initialMessage
     if (initialMsg?.trim()) {
       autoSentRef.current = true
+      sessionCreatingRef.current = true
       setPendingFirstMessage(initialMsg)
-      createSession.mutate({ firstMessage: initialMsg })
+      createSession.mutate(
+        { firstMessage: initialMsg },
+        { onSettled: () => { sessionCreatingRef.current = false } },
+      )
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages, pendingFirstMessage])
+  }, [messages, pendingFirstMessage, closingMessage])
 
   const handleSend = (files: File[]) => {
     const text = inputValue.trim()
     if (!text && files.length === 0) return
 
     if (!effectiveSessionId) {
+      if (sessionCreatingRef.current) return
+      sessionCreatingRef.current = true
       setPendingFirstMessage(text || `[${files.map((f) => f.name).join(", ")}]`)
       setInputValue("")
-      createSession.mutate({ firstMessage: text, files })
+      createSession.mutate(
+        { firstMessage: text, files },
+        {
+          onSuccess: (r) => { if (r.messages[1] && "escalation" in r) setNeedsEscalation(false) },
+          onSettled: () => { sessionCreatingRef.current = false },
+        },
+      )
     } else {
       sendMessage.mutate({ content: text, files })
       setInputValue("")
@@ -71,11 +92,27 @@ export const AssistantScreen = () => {
     setActiveSessionId(null)
     setInputValue("")
     setPendingFirstMessage(null)
+    setClosingMessage(null)
+  }
+
+  const handleSessionSelect = (id: string | null) => {
+    setActiveSessionId(id)
+    setClosingMessage(null)
   }
 
   const isSending = sendMessage.isPending || createSession.isPending
 
-  const activeSession = sessions.find((s) => s.id === effectiveSessionId)
+  const queryClient = useQueryClient()
+
+  const resolveTicket = useMutation({
+    mutationFn: (id: string) => apiClient.post(`/tickets/${id}/resolve`),
+    onSuccess: () => {
+      setClosingMessage("Рад был помочь! Обращение закрыто.")
+      queryClient.invalidateQueries({ queryKey: ["tickets"] })
+    },
+  })
+
+  const ticketActioned = resolveTicket.isSuccess
 
   // Deduplicate messages by id as a safety net
   const uniqueMessages = messages.filter(
@@ -89,7 +126,7 @@ export const AssistantScreen = () => {
         sessions={sessions}
         activeSessionId={effectiveSessionId}
         isLoading={sessionsLoading}
-        onSelect={setActiveSessionId}
+        onSelect={handleSessionSelect}
         onNewChat={handleNewChat}
       />
 
@@ -155,14 +192,38 @@ export const AssistantScreen = () => {
             </div>
           )}
 
+          {closingMessage && (
+            <div className={styles.closingMessage}>
+              <div className={styles.closingAvatar}>
+                <Bot size={16} />
+              </div>
+              <div className={styles.closingBubble}>
+                <p className={styles.closingText}>{closingMessage}</p>
+              </div>
+            </div>
+          )}
+
           <div ref={messagesEndRef} />
         </div>
+
+        {ticketId && uniqueMessages.length > 0 && !ticketActioned && (
+          <div className={styles.ticketActions}>
+            <button
+              className={styles.resolveBtn}
+              onClick={() => resolveTicket.mutate(ticketId)}
+              disabled={resolveTicket.isPending}
+            >
+              <CheckCircle2 size={16} />
+              Проблема решена
+            </button>
+          </div>
+        )}
 
         <ChatInput
           value={inputValue}
           onChange={setInputValue}
           onSubmit={handleSend}
-          disabled={isSending}
+          disabled={isSending || ticketActioned}
         />
       </main>
     </div>

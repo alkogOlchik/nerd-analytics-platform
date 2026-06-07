@@ -13,6 +13,7 @@ const mapSession = (dto: ChatSessionDto): ChatSession => ({
   createdAt: dto.created_at,
   updatedAt: dto.updated_at,
   lastMessage: dto.last_message,
+  ticketId: dto.ticket_id,
 })
 
 const mapMessage = (dto: MessageDto): Message => ({
@@ -34,16 +35,17 @@ export const assistantRepository = {
     return dtos.map(mapMessage)
   },
 
-  sendMessage: async (sessionId: string, content: string, files?: File[]): Promise<SendMessageResult> => {
+  sendMessage: async (sessionId: string, content: string, files?: File[], ticketId?: string): Promise<SendMessageResult> => {
     let file_ids: string[] | undefined
     if (files?.length) {
       const uploaded = await assistantSource.uploadFiles(files)
       file_ids = uploaded.map((f) => f.id)
     }
-    const res = await assistantSource.sendMessage({ chat_id: sessionId, content, file_ids })
+    const res = await assistantSource.sendMessage({ chat_id: sessionId, content, file_ids, ticket_id: ticketId })
     return {
       userMessage: mapMessage(res.user_message),
       assistantMessage: mapMessage(res.assistant_message),
+      escalation: res.escalation,
     }
   },
 

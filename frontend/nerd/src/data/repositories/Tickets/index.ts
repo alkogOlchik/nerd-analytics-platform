@@ -7,12 +7,29 @@ const IS_MOCK = import.meta.env.VITE_IS_MOCK === "true"
 
 const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
 
+const STATUS_MAP: Record<string, TicketStatus> = {
+  принято: "open",
+  в_работе: "in_progress",
+  требуется_информация: "waiting",
+  передано_разработчикам: "processing",
+  исправлено: "done",
+  закрыто: "closed",
+  отклонено: "closed",
+  open: "open",
+  in_progress: "in_progress",
+  waiting: "waiting",
+  processing: "processing",
+  closed: "closed",
+  reopened: "reopened",
+}
+
 const mapTicket = (dto: TicketDto): Ticket => ({
   id: dto.id,
   clientId: dto.client_id,
   responsibleId: dto.responsible_id,
+  title: dto.title ?? null,
   product: dto.product,
-  status: dto.status,
+  status: STATUS_MAP[dto.status] ?? "open",
   priority: dto.priority,
   date: dto.date,
   deadline: dto.deadline,

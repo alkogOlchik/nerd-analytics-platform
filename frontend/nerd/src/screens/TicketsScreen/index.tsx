@@ -1,29 +1,39 @@
 import { useState, type ReactNode } from "react"
-import { Circle, Loader, CheckCircle, RotateCcw, FileText } from "lucide-react"
+import { Loader, CheckCircle, FileText, Clock, Wrench } from "lucide-react"
 import styles from "./TicketsScreen.module.scss"
 import { Sidebar, UserMenu, TicketCard } from "modules"
 import { useTickets } from "domain/Tickets"
 import type { TicketStatus } from "data/repositories/Tickets"
 
-type TabValue = "all" | TicketStatus
+type TabValue = "all" | "active" | "waiting" | "processing" | "closed"
+
+const ACTIVE_STATUSES: TicketStatus[] = ["open", "in_progress"]
+const CLOSED_STATUSES: TicketStatus[] = ["done", "closed", "reopened"]
 
 const TABS: { value: TabValue; label: string; icon: ReactNode }[] = [
   { value: "all", label: "Все", icon: <FileText size={15} /> },
-  { value: "open", label: "Открытые", icon: <Circle size={15} /> },
-  { value: "in_progress", label: "В обработке", icon: <Loader size={15} /> },
+  { value: "active", label: "В работе", icon: <Loader size={15} /> },
+  { value: "waiting", label: "В ожидании оператора", icon: <Clock size={15} /> },
+  { value: "processing", label: "Обрабатывается оператором", icon: <Wrench size={15} /> },
   { value: "closed", label: "Закрытые", icon: <CheckCircle size={15} /> },
-  { value: "reopened", label: "Переоткрытые", icon: <RotateCcw size={15} /> },
 ]
+
+const filterByTab = (tickets: { status: TicketStatus }[], tab: TabValue) => {
+  if (tab === "all") return tickets
+  if (tab === "active") return tickets.filter((t) => ACTIVE_STATUSES.includes(t.status))
+  if (tab === "waiting") return tickets.filter((t) => t.status === "waiting")
+  if (tab === "processing") return tickets.filter((t) => t.status === "processing")
+  if (tab === "closed") return tickets.filter((t) => CLOSED_STATUSES.includes(t.status))
+  return tickets
+}
 
 export const TicketsScreen = () => {
   const [activeTab, setActiveTab] = useState<TabValue>("all")
   const { data: tickets = [], isLoading } = useTickets()
 
-  const filteredTickets =
-    activeTab === "all" ? tickets : tickets.filter((t) => t.status === activeTab)
+  const filteredTickets = filterByTab(tickets, activeTab)
 
-  const countByTab = (tab: TabValue) =>
-    tab === "all" ? tickets.length : tickets.filter((t) => t.status === tab).length
+  const countByTab = (tab: TabValue) => filterByTab(tickets, tab).length
 
   return (
     <div className={styles.page}>

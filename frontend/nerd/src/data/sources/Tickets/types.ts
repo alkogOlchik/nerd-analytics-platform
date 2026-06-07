@@ -12,8 +12,9 @@ export interface TicketDto {
   id: string
   client_id: string
   responsible_id: string | null
-  product: TicketProductDto
-  status: TicketStatusDto
+  title?: string | null
+  product: TicketProductDto | null
+  status: string
   priority: TicketPriorityDto
   date: string
   deadline: string

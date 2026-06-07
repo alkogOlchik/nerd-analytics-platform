@@ -4,13 +4,13 @@ import type { Message } from "data/repositories/Assistant"
 import { messagesQueryKey } from "domain/Assistant/useMessages"
 import { CHAT_SESSIONS_QUERY_KEY } from "domain/Assistant/useChatSessions"
 
-export const useSendMessage = (sessionId: string | null) => {
+export const useSendMessage = (sessionId: string | null, ticketId?: string | null) => {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: ({ content, files }: { content: string; files?: File[] }) => {
       if (!sessionId) throw new Error("No active session")
-      return assistantRepository.sendMessage(sessionId, content, files)
+      return assistantRepository.sendMessage(sessionId, content, files, ticketId ?? undefined)
     },
     onMutate: async ({ content }: { content: string; files?: File[] }) => {
       if (!sessionId) return undefined

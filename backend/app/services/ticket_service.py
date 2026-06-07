@@ -505,3 +505,55 @@ async def add_attachment(
     await db.commit()
     await db.refresh(attachment)
     return attachment
+
+
+async def client_resolve_ticket(
+    db: AsyncSession,
+    ticket_id: uuid.UUID,
+    client_id: uuid.UUID,
+) -> Ticket:
+    result = await db.execute(select(Ticket).where(Ticket.id == ticket_id))
+    ticket = result.scalar_one_or_none()
+    if not ticket:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
+    if ticket.client_id != client_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
+    old_status = ticket.status
+    ticket.status = TicketStatus.fixed.value
+    ticket.status_updated_at = datetime.now(UTC)
+    db.add(TicketStatusHistory(
+        ticket_id=ticket.id,
+        status_from=old_status,
+        status_to=ticket.status,
+        changed_by=client_id,
+    ))
+    await db.commit()
+    await db.refresh(ticket)
+    return ticket
+
+
+async def client_escalate_ticket(
+    db: AsyncSession,
+    ticket_id: uuid.UUID,
+    client_id: uuid.UUID,
+) -> Ticket:
+    result = await db.execute(select(Ticket).where(Ticket.id == ticket_id))
+    ticket = result.scalar_one_or_none()
+    if not ticket:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
+    if ticket.client_id != client_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
+    old_status = ticket.status
+    ticket.status = TicketStatus.needs_info.value
+    ticket.status_updated_at = datetime.now(UTC)
+    db.add(TicketStatusHistory(
+        ticket_id=ticket.id,
+        status_from=old_status,
+        status_to=ticket.status,
+        changed_by=client_id,
+    ))
+    await db.commit()
+    await db.refresh(ticket)
+    return ticket

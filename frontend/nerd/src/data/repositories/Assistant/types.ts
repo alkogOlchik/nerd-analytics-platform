@@ -4,6 +4,7 @@ export interface ChatSession {
   createdAt: string
   updatedAt: string
   lastMessage?: string
+  ticketId?: string | null
 }
 
 export interface Message {
@@ -17,6 +18,7 @@ export interface Message {
 export interface SendMessageResult {
   userMessage: Message
   assistantMessage: Message
+  escalation?: boolean
 }
 
 export interface CreateSessionResult {

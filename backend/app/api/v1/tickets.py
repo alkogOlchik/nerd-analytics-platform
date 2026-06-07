@@ -126,6 +126,24 @@ async def patch_ticket_status(
     return await ticket_service.patch_ticket_status(db, ticket_id, current_user.id, data)
 
 
+@router.post("/{ticket_id}/resolve", response_model=TicketResponse)
+async def client_resolve_ticket(
+    ticket_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    return await ticket_service.client_resolve_ticket(db, ticket_id, current_user.id)
+
+
+@router.post("/{ticket_id}/escalate-to-operator", response_model=TicketResponse)
+async def client_escalate_ticket(
+    ticket_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    return await ticket_service.client_escalate_ticket(db, ticket_id, current_user.id)
+
+
 @router.patch("/{ticket_id}/priority", response_model=TicketResponse)
 async def patch_ticket_priority(
     ticket_id: uuid.UUID,

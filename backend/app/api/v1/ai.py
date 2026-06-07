@@ -81,11 +81,14 @@ async def chat(
     db: AsyncSession = Depends(get_db),
     current_user: CurrentUser = Depends(get_current_user),
 ):
-    chat_id, user_msg, assistant_msg, ml_response, escalation = await ai_service.chat(
+    chat_id, ticket_id, ticket_title, ai_needs_escalation, user_msg, assistant_msg, ml_response, escalation = await ai_service.chat(
         db, current_user.id, data
     )
     return ChatResponse(
         chat_id=chat_id,
+        ticket_id=ticket_id,
+        ticket_title=ticket_title,
+        ai_needs_escalation=ai_needs_escalation,
         user_message=ChatMessageResponse.model_validate(user_msg),
         assistant_message=ChatMessageResponse.model_validate(assistant_msg),
         ml_response=ml_response,

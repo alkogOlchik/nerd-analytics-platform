@@ -18,7 +18,8 @@ class Ticket(Base):
     responsible_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("employees.id"), nullable=True, index=True
     )
-    product: Mapped[str] = mapped_column(String(64), nullable=False)
+    title: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    product: Mapped[str | None] = mapped_column(String(64), nullable=True)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="принято")
     priority: Mapped[str] = mapped_column(String(16), nullable=False, default="medium")
     user_priority: Mapped[str | None] = mapped_column(String(16), nullable=True)

@@ -186,6 +186,9 @@ class ChatEscalateRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     chat_id: uuid.UUID
+    ticket_id: uuid.UUID | None = None
+    ticket_title: str | None = None
+    ai_needs_escalation: bool = False
     user_message: ChatMessageResponse
     assistant_message: ChatMessageResponse
     ml_response: dict
