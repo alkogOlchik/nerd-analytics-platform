@@ -13,6 +13,7 @@ import { AnalyticsPage } from "./pages/AnalyticsPage"
 import { CreateTicketPage } from "./pages/CreateTicketPage"
 import { FeedbackPage } from "./pages/FeedbackPage"
 import { TicketStatusPage } from "./pages/TicketStatusPage"
+import { MyReviewsPage } from "./pages/MyReviewsPage"
 import { PrivateRoute } from "./shared/ui/PrivateRoute"
 // import { EmployeeRoute } from "./shared/ui/EmployeeRoute"
 
@@ -51,6 +52,10 @@ const appRoutes: RouteObject[] = [
   {
     path: routes.ticketStatus,
     element: <TicketStatusPage />
+  },
+  {
+    path: routes.myReviews,
+    element: <MyReviewsPage />
   },
   { path: routes.analytics, element: <AnalyticsPage /> },
   {

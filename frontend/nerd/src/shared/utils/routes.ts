@@ -11,4 +11,5 @@ export const routes = {
     createTicket: "/create-ticket",
     feedback: "/feedback",
     ticketStatus: "/ticket-status",
+    myReviews: "/my-reviews",
 } as const
