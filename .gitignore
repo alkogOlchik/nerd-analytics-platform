@@ -35,3 +35,4 @@ backend/notebooks/**/*.csv
 backend/notebooks/**/*.xlsx
 .ipynb_checkpoints/
 
+.claude/settings.local.json
